@@ -1,0 +1,263 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml"; 
+}
+
+<div class="flex flex-col w-full p-container-margin gap-stack-lg animate-[fadeIn_0.5s_ease-out]">
+    <div class="flex items-center justify-between mb-2">
+        <div>
+            <h1 class="font-display-lg text-display-lg text-on-surface mb-1 tracking-tight">Gösterge Paneli - Genel Bakış</h1>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Ticaret telemetrisi ve aktif ML.NET çıkarım boru hatlarının toplu görünümü.</p>
+        </div>
+        <div class="flex items-center gap-3 bg-surface-container-high rounded-full p-1.5 shadow-sm">
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface text-on-surface font-label-md text-label-md shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+                Son 30 Gün
+            </button>
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-colors">
+                <span class="material-symbols-outlined text-[18px]">public</span>
+                Tüm Bölgeler
+            </button>
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-colors">
+                <span class="material-symbols-outlined text-[18px]">category</span>
+                Tüm Kategoriler
+            </button>
+            <div class="w-px h-6 bg-outline-variant mx-1"></div>
+            <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-on-primary hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>
+            </button>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-gutter">
+        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Toplam Hacim</span>
+                <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg text-[20px]">database</span>
+            </div>
+            <div class="relative z-10">
+                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
+                    1.02M <span class="font-label-md text-label-md text-on-tertiary-container flex items-center bg-tertiary-container/10 px-2 py-0.5 rounded-full"><span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>+12.4%</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-outline mt-1">İşlenen işlemler</p>
+            </div>
+        </div>
+        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-colors"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Aktif Katalog</span>
+                <span class="material-symbols-outlined text-secondary bg-secondary/10 p-2 rounded-lg text-[20px]">inventory_2</span>
+            </div>
+            <div class="relative z-10">
+                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
+                    100 <span class="font-label-md text-label-md text-on-surface-variant flex items-center bg-surface-variant/50 px-2 py-0.5 rounded-full">8 Kategori Genelinde</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-outline mt-1">İzlenen SKU'lar</p>
+            </div>
+        </div>
+        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-on-tertiary-container/5 rounded-full blur-2xl group-hover:bg-on-tertiary-container/10 transition-colors"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Küresel Erişim</span>
+                <span class="material-symbols-outlined text-on-tertiary-container bg-tertiary-container/10 p-2 rounded-lg text-[20px]">public</span>
+            </div>
+            <div class="relative z-10">
+                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
+                    10 <span class="font-label-md text-label-md text-on-surface-variant flex items-center bg-surface-variant/50 px-2 py-0.5 rounded-full">Aktif Bölge</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-outline mt-1">Faaliyet gösterilen pazarlar</p>
+            </div>
+        </div>
+        <div class="bg-primary-container rounded-2xl p-6 relative overflow-hidden shadow-md flex flex-col justify-between">
+            <div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
+            <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="relative z-10 flex items-start justify-between">
+                <div>
+                    <span class="font-label-md text-label-md text-on-primary-container uppercase tracking-wider block mb-1 flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></div>
+                        ML Boru Hattı Durumu
+                    </span>
+                    <div class="font-headline-sm text-headline-sm text-on-primary-container mt-2">Tüm Modeller Sağlıklı</div>
+                </div>
+                <span class="material-symbols-outlined text-on-primary-container/50 text-[32px]">hub</span>
+            </div>
+            <div class="relative z-10 flex flex-col gap-2 mt-6">
+                <div class="flex items-center justify-between">
+                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">FORECAST_v2.1</span>
+                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-full h-full bg-on-tertiary-container"></div></span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">CLASS_ENSEMBLE</span>
+                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-full h-full bg-on-tertiary-container"></div></span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">ANOMALY_ISO</span>
+                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[85%] h-full bg-on-tertiary-container"></div></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+        <div class="lg:col-span-8 flex flex-col gap-gutter">
+            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col min-h-[400px]">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="font-headline-sm text-headline-sm text-on-surface">Günlük Hacim ve Öngörü</h2>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">Geçmiş satışlar ve 14 günlük ML projeksiyonu</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container rounded">
+                            <div class="w-2 h-2 rounded-full bg-primary"></div>
+                            <span class="font-label-md text-[11px] text-on-surface">Gerçek</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container rounded">
+                            <div class="w-2 h-2 rounded-full bg-secondary border border-secondary border-dashed" style="background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--tw-colors-secondary) 2px, var(--tw-colors-secondary) 4px);"></div>
+                            <span class="font-label-md text-[11px] text-on-surface">Öngörü</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 relative w-full h-full min-h-[280px] bg-surface-container-low/50 rounded-xl flex items-end pt-8 px-4 pb-8">
+                    <svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 300">
+                        <defs>
+                            <lineargradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0%" stop-color="var(--tw-colors-primary)" stop-opacity="0.2"></stop>
+                                <stop offset="100%" stop-color="var(--tw-colors-primary)" stop-opacity="0"></stop>
+                            </lineargradient>
+                            <pattern height="10" id="forecastPattern" patternunits="userSpaceOnUse" width="10">
+                                <path d="M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2" stroke="var(--tw-colors-secondary)" stroke-opacity="0.3" stroke-width="1"></path>
+                            </pattern>
+                        </defs>
+                        <path d="M0,280 L0,180 Q50,150 100,200 T200,120 T300,160 T400,90 T500,110 T600,40 T700,80 L700,280 Z" fill="url(#chartGrad)"></path>
+                        <path d="M0,180 Q50,150 100,200 T200,120 T300,160 T400,90 T500,110 T600,40 T700,80" fill="none" stroke="var(--tw-colors-primary)" stroke-linecap="round" stroke-width="3"></path>
+                        <path d="M700,280 L700,80 Q750,50 800,90 T900,30 T1000,60 L1000,280 Z" fill="url(#forecastPattern)"></path>
+                        <path d="M700,80 Q750,50 800,90 T900,30 T1000,60" fill="none" stroke="var(--tw-colors-secondary)" stroke-dasharray="8,4" stroke-linecap="round" stroke-width="3"></path>
+                        <line stroke="var(--tw-colors-outline-variant)" stroke-dasharray="4,4" stroke-width="1" x1="700" x2="700" y1="0" y2="280"></line>
+                        <rect fill="var(--tw-colors-surface-container-high)" height="24" rx="12" width="80" x="660" y="285"></rect>
+                        <text class="font-data-mono text-[10px]" fill="var(--tw-colors-on-surface)" text-anchor="middle" x="700" y="300">BUGÜN</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="lg:col-span-4 flex flex-col gap-gutter h-full">
+            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex-1">
+                <h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">Bölgesel Isı Haritası</h2>
+                <p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Aktif pazarlardaki işlem yoğunluğu</p>
+                <div class="relative w-full h-[200px] mb-6 rounded-xl overflow-hidden bg-surface-container-low" data-alt="A highly stylized, minimal global map visualization with an indigo and teal color palette matching the UI. Soft glowing heat points indicating high transaction volume in North America, Europe, and Asia. Corporate, sleek, data-driven aesthetic." data-location="Global, Top Markets" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuATz8KyvdLBHTTXOwWad37HAQJkdSa5Lu01fkbJns5anjk4eWLpbBklXB5igmwFNU5RrEEvwVOVj1RgccGNh6QAP3VYEiDWyL-feJKNKg1EG69lc2GFYBAOCl_-C5x3awUZzjT0KBWv3AYWi_tFw_jrPSbT1H7xBFtsVEzFvt-09i_M9Rd_3xghDoLPyk9QSfLyDTcuHAzwyxz0PERREKa8GrEN_QJoBtig3kVKLe4LQIcwiObl0XX-')"></div>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">01</span>
+                            <span class="font-body-md text-body-md text-on-surface font-medium">Amerika Birleşik Devletleri</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[85%] h-full bg-primary"></div></span>
+                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">42.1k</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">02</span>
+                            <span class="font-body-md text-body-md text-on-surface font-medium">Birleşik Krallık</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[60%] h-full bg-secondary"></div></span>
+                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">28.4k</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">03</span>
+                            <span class="font-body-md text-body-md text-on-surface font-medium">Almanya</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[45%] h-full bg-secondary"></div></span>
+                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">19.2k</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between bg-surface-bright">
+            <div>
+                <h2 class="font-headline-sm text-headline-sm text-on-surface">Son Çıkarım Günlükleri</h2>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">ML.NET anomali tespiti tarafından işlenen işlemlerin canlı akışı.</p>
+            </div>
+            <button class="flex items-center gap-2 px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high transition-colors font-label-md text-[12px] text-on-surface">
+                <span class="material-symbols-outlined text-[16px]">download</span> CSV İndir
+            </button>
+        </div>
+        <div class="w-full overflow-x-auto">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-error hidden group-hover:block"></div><table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low/50">
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-24">İşlem Kimliği</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-40">Zaman Damgası</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Ürün</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kategori</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right w-32">Tutar</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-32">Bölge</th>
+                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right w-24">Risk Puanı</th>
+                    </tr>
+                </thead>
+                <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant/10">
+                    <tr class="hover:bg-surface-container-low transition-colors group">
+                        <td class="py-3 px-6 font-data-mono text-outline">#84920</td>
+                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:22:01</td>
+                        <td class="py-3 px-6 font-medium">Kuantum Gürültü Önleyici Kulaklık</td>
+                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Elektronik</span></td>
+                        <td class="py-3 px-6 text-right font-data-mono">$249.99</td>
+                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> US</td>
+                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.02</td>
+                    </tr>
+                    <tr class="hover:bg-surface-container-low transition-colors group">
+                        <td class="py-3 px-6 font-data-mono text-outline">#84919</td>
+                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:19:45</td>
+                        <td class="py-3 px-6 font-medium">Ergonomik Fileli Ofis Koltuğu</td>
+                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Mobilya</span></td>
+                        <td class="py-3 px-6 text-right font-data-mono">$315.50</td>
+                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-secondary"></div> UK</td>
+                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.04</td>
+                    </tr>
+                    <tr class="hover:bg-surface-container-low transition-colors group bg-error/5 relative">
+                        <td class="py-3 px-6 font-data-mono text-outline">#84918</td>
+                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:15:12</td>
+                        <td class="py-3 px-6 font-medium text-error">Toplu Alım: Akıllı Saatler</td>
+                        <td class="py-3 px-6"><span class="px-2 py-1 bg-error-container text-on-error-container rounded-md text-[11px] font-label-md">Elektronik</span></td>
+                        <td class="py-3 px-6 text-right font-data-mono text-error font-medium">$4,250.00</td>
+                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-secondary"></div> DE</td>
+                        <td class="py-3 px-6 text-right font-data-mono text-error font-bold flex items-center justify-end gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> 0.94</td>
+                    </tr>
+                    <tr class="hover:bg-surface-container-low transition-colors group">
+                        <td class="py-3 px-6 font-data-mono text-outline">#84917</td>
+                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:10:05</td>
+                        <td class="py-3 px-6 font-medium">Seramik Filtre Kahve Makinesi</td>
+                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Ev</span></td>
+                        <td class="py-3 px-6 text-right font-data-mono">$45.00</td>
+                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> US</td>
+                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.01</td>
+                    </tr>
+                    <tr class="hover:bg-surface-container-low transition-colors group">
+                        <td class="py-3 px-6 font-data-mono text-outline">#84916</td>
+                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:02:33</td>
+                        <td class="py-3 px-6 font-medium">Ultra Geniş Oyun Monitörü 34"</td>
+                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Elektronik</span></td>
+                        <td class="py-3 px-6 text-right font-data-mono">$799.00</td>
+                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> CA</td>
+                        <td class="py-3 px-6 text-right font-data-mono text-on-surface-variant">0.12</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 border-t border-outline-variant/20 bg-surface-bright flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-outline">1.024.592 kayıttan 5 tanesi gösteriliyor</span>
+            <div class="flex gap-1">
+                <button class="w-8 h-8 rounded flex items-center justify-center text-outline hover:bg-surface-container transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+                <button class="w-8 h-8 rounded flex items-center justify-center bg-primary text-on-primary font-label-md text-[12px]">1</button>
+                <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors font-label-md text-[12px]">2</button>
+                <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors font-label-md text-[12px]">3</button>
+                <button class="w-8 h-8 rounded flex items-center justify-center text-outline hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+            </div>
+        </div>
+    </div>
+</div>

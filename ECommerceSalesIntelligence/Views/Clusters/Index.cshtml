@@ -1,0 +1,241 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex flex-col w-full gap-stack-lg pb-container-margin">
+    <!-- Hero / Intro -->
+    <div class="bg-surface-container relative overflow-hidden rounded-xl mx-container-margin mt-container-margin shadow-sm">
+        <div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
+        <div class="p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+            <div class="flex flex-col gap-2">
+                <span class="font-label-md text-label-md text-secondary uppercase tracking-wider">Model Analizi</span>
+                <h1 class="font-display-lg text-display-lg text-on-surface">Kümeleme ve Değerlendirme Raporları</h1>
+                <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                    Uzamsal pazar kümeleri ve tahmine dayalı modellerdeki performans metriklerinin kapsamlı dökümü. ML.NET K-Means ve FastTree algoritmaları ile doğrulanmıştır.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-full hover:bg-primary/90 transition-colors shadow-md flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    Raporu Dışa Aktar
+                </button>
+                <button class="bg-surface text-on-surface font-label-md text-label-md px-4 py-3 rounded-full hover:bg-surface-variant transition-colors shadow-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">sync</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Clustering Section -->
+    <div class="mx-container-margin flex flex-col gap-stack-md">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary">hub</span>
+            <h2 class="font-headline-md text-headline-md text-on-surface">Uzamsal Pazar Kümeleri</h2>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+            <!-- Scatter Plot -->
+            <div class="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-sm p-6 relative">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col">
+                        <span class="font-headline-sm text-headline-sm text-on-surface">OSD - İşlem Hacmi</span>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant">K-Means (k=4) Özellik Dağılımı</span>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-secondary"></div><span class="font-label-md text-label-md text-on-surface-variant">Küme 1</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-tertiary-container"></div><span class="font-label-md text-label-md text-on-surface-variant">Küme 2</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-error"></div><span class="font-label-md text-label-md text-on-surface-variant">Küme 3</span></div>
+                        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded-full bg-primary-fixed-dim"></div><span class="font-label-md text-label-md text-on-surface-variant">Küme 4</span></div>
+                    </div>
+                </div>
+                <!-- Synthetic Scatter Plot Visualization -->
+                <div class="w-full h-80 relative bg-surface-container-low rounded-lg p-4">
+                    <!-- Grid Lines -->
+                    <div class="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none opacity-20">
+                        <div class="h-px bg-on-surface-variant w-full"></div>
+                        <div class="h-px bg-on-surface-variant w-full"></div>
+                        <div class="h-px bg-on-surface-variant w-full"></div>
+                        <div class="h-px bg-on-surface-variant w-full"></div>
+                        <div class="h-px bg-on-surface-variant w-full"></div>
+                    </div>
+                    <!-- SVG Scatter -->
+                    <svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+                        <!-- Cluster 1 (Secondary - High Vol, Med AOV) -->
+                        <circle class="fill-secondary opacity-70" cx="70" cy="40" r="1.5"></circle>
+                        <circle class="fill-secondary opacity-80" cx="75" cy="35" r="2"></circle>
+                        <circle class="fill-secondary opacity-60" cx="82" cy="45" r="1.2"></circle>
+                        <circle class="fill-secondary opacity-75" cx="68" cy="50" r="1.8"></circle>
+                        <circle class="fill-secondary opacity-90" cx="85" cy="38" r="2.5"></circle>
+                        <circle class="fill-secondary opacity-70" cx="90" cy="42" r="1.5"></circle>
+                        <!-- Cluster 2 (Tertiary Container - High AOV, Low Vol) -->
+                        <circle class="fill-tertiary-container opacity-80" cx="20" cy="15" r="2"></circle>
+                        <circle class="fill-tertiary-container opacity-70" cx="15" cy="20" r="1.5"></circle>
+                        <circle class="fill-tertiary-container opacity-90" cx="25" cy="10" r="2.5"></circle>
+                        <circle class="fill-tertiary-container opacity-60" cx="30" cy="22" r="1.2"></circle>
+                        <circle class="fill-tertiary-container opacity-75" cx="18" cy="25" r="1.8"></circle>
+                        <!-- Cluster 3 (Error - Low AOV, Low Vol) -->
+                        <circle class="fill-error opacity-70" cx="15" cy="80" r="1.5"></circle>
+                        <circle class="fill-error opacity-60" cx="20" cy="85" r="1.2"></circle>
+                        <circle class="fill-error opacity-75" cx="10" cy="75" r="1.8"></circle>
+                        <circle class="fill-error opacity-80" cx="25" cy="90" r="2"></circle>
+                        <circle class="fill-error opacity-70" cx="30" cy="78" r="1.5"></circle>
+                        <!-- Cluster 4 (Primary Fixed Dim - Med AOV, Med Vol) -->
+                        <circle class="fill-primary-fixed-dim opacity-80" cx="45" cy="55" r="1.5"></circle>
+                        <circle class="fill-primary-fixed-dim opacity-90" cx="50" cy="60" r="2"></circle>
+                        <circle class="fill-primary-fixed-dim opacity-70" cx="40" cy="50" r="1.2"></circle>
+                        <circle class="fill-primary-fixed-dim opacity-85" cx="55" cy="45" r="1.8"></circle>
+                        <circle class="fill-primary-fixed-dim opacity-75" cx="48" cy="65" r="1.5"></circle>
+                        <circle class="fill-primary-fixed-dim opacity-95" cx="38" cy="58" r="2.2"></circle>
+                        <!-- Centroids -->
+                        <path d="M 77 38 L 81 42 M 81 38 L 77 42" stroke="var(--color-secondary)" stroke-width="0.5"></path>
+                        <path d="M 20 16 L 24 20 M 24 16 L 20 20" stroke="var(--color-tertiary-container)" stroke-width="0.5"></path>
+                        <path d="M 18 80 L 22 84 M 22 80 L 18 84" stroke="var(--color-error)" stroke-width="0.5"></path>
+                        <path d="M 45 53 L 49 57 M 49 53 L 45 57" stroke="var(--color-primary-fixed-dim)" stroke-width="0.5"></path>
+                    </svg>
+                    <!-- Axes Labels -->
+                    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">İşlem Hacmi (Logaritmik Ölçek)</div>
+                    <div class="absolute left-1 top-1/2 -translate-y-1/2 -rotate-90 font-label-md text-label-md text-on-surface-variant whitespace-nowrap origin-left">Ortalama Sipariş Değeri (USD)</div>
+                </div>
+            </div>
+            <!-- Cluster Interpretations -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-secondary-container text-on-secondary-container p-5 rounded-xl shadow-sm flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-headline-sm text-headline-sm">Küme 1: Hacim Sürücüleri</span>
+                        <span class="material-symbols-outlined text-[20px]">trending_up</span>
+                    </div>
+                    <p class="font-body-md text-body-md opacity-90">Yüksek frekans, orta değer. Toplam gelirin %45'ini temsil eder. Önemli şehirler: NYC, Londra, Tokyo.</p>
+                    <div class="mt-2 font-data-mono text-data-mono text-sm opacity-75">Ort. OSD: $124 | Frekans: 8.4/ay</div>
+                </div>
+                <div class="bg-tertiary-container text-on-tertiary-container p-5 rounded-xl shadow-sm flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-headline-sm text-headline-sm">Küme 2: Premium Pazarlar</span>
+                        <span class="material-symbols-outlined text-[20px]">diamond</span>
+                    </div>
+                    <p class="font-body-md text-body-md opacity-90">Düşük frekans, olağanüstü değer. Lüks büyüme için yüksek potansiyel. Önemli şehirler: Dubai, Zürih, Monako.</p>
+                    <div class="mt-2 font-data-mono text-data-mono text-sm opacity-75">Ort. OSD: $890 | Frekans: 1.2/ay</div>
+                </div>
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col gap-2 relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-headline-sm text-headline-sm text-on-surface">Küme 3: Kayıp Riski</span>
+                        <span class="material-symbols-outlined text-[20px] text-error">warning</span>
+                    </div>
+                    <p class="font-body-md text-body-md text-on-surface-variant">Düşük değer, azalan frekans. Acil elde tutma stratejisi gerektirir. Ağırlıklı olarak 3. seviye gelişmekte olan pazarlar.</p>
+                </div>
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col gap-2 relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed-dim"></div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-headline-sm text-headline-sm text-on-surface">Küme 4: Sabit Çekirdek</span>
+                        <span class="material-symbols-outlined text-[20px] text-primary-fixed-dim">balance</span>
+                    </div>
+                    <p class="font-body-md text-body-md text-on-surface-variant">Tutarlı ılımlı davranış. Sistemik modelleme için temel çizgi.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Model Evaluation Table -->
+    <div class="mx-container-margin flex flex-col gap-stack-md mt-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary">assignment</span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Tam Model Değerlendirmesi</h2>
+            </div>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface">Doğrulama Seti: 2023 Ç4</span>
+            </div>
+        </div>
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container font-label-md text-label-md text-on-surface uppercase tracking-wider">
+                            <th class="p-4 w-1/4">Model Boru Hattı</th>
+                            <th class="p-4">Tür</th>
+                            <th class="p-4">Birincil Metrik</th>
+                            <th class="p-4">İkincil Metrik</th>
+                            <th class="p-4">Veri Dağılımı Notları</th>
+                            <th class="p-4 text-center">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="font-body-md text-body-md text-on-surface divide-y divide-surface-container">
+                        <!-- Row 1 -->
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-md text-label-md">FT</div>
+                                    <div class="flex flex-col">
+                                        <span class="font-headline-sm text-[16px] leading-tight">FastTree Regresyonu</span>
+                                        <span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Talep Öngörüsü</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4"><span class="px-2 py-1 bg-surface-variant text-on-surface-variant rounded text-[11px] font-label-md">Regresyon</span></td>
+                            <td class="p-4 font-data-mono">RMSE: 12.45</td>
+                            <td class="p-4 font-data-mono">R²: 0.942</td>
+                            <td class="p-4 text-on-surface-variant">Sağa çarpık hedef; log dönüşümü uygulandı. Yüksek mevsimsellik faktörü (+0.82 korr).</td>
+                            <td class="p-4 text-center">
+                                <span class="material-symbols-outlined text-secondary bg-secondary/10 rounded-full p-1">check_circle</span>
+                            </td>
+                        </tr>
+                        <!-- Row 2 -->
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-label-md text-label-md">SDCA</div>
+                                    <div class="flex flex-col">
+                                        <span class="font-headline-sm text-[16px] leading-tight">SDCA Lojistik</span>
+                                        <span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Kayıp Tahmini</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4"><span class="px-2 py-1 bg-surface-variant text-on-surface-variant rounded text-[11px] font-label-md">İkili Sınıf</span></td>
+                            <td class="p-4 font-data-mono">AUC: 0.891</td>
+                            <td class="p-4 font-data-mono">Acc: 91.2%</td>
+                            <td class="p-4 text-on-surface-variant">Dengesiz sınıf (8:1). Eğitim aşamasında SMOTE uygulandı. Simetrik özellikler.</td>
+                            <td class="p-4 text-center">
+                                <span class="material-symbols-outlined text-secondary bg-secondary/10 rounded-full p-1">check_circle</span>
+                            </td>
+                        </tr>
+                        <!-- Row 3 -->
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded bg-primary-fixed-dim text-on-surface flex items-center justify-center font-label-md text-label-md">KM</div>
+                                    <div class="flex flex-col">
+                                        <span class="font-headline-sm text-[16px] leading-tight">K-Means Kümeleme</span>
+                                        <span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Uzamsal Gruplama</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4"><span class="px-2 py-1 bg-surface-variant text-on-surface-variant rounded text-[11px] font-label-md">Denetimsiz</span></td>
+                            <td class="p-4 font-data-mono">Silhouette: 0.68</td>
+                            <td class="p-4 font-data-mono">Davies-Bouldin: 0.84</td>
+                            <td class="p-4 text-on-surface-variant">Standartlaştırılmış ölçek (Z-skoru). Hacim özelliğinde iki modlu dağılım.</td>
+                            <td class="p-4 text-center">
+                                <span class="material-symbols-outlined text-secondary bg-secondary/10 rounded-full p-1">check_circle</span>
+                            </td>
+                        </tr>
+                        <!-- Row 4 -->
+                        <tr class="hover:bg-surface-container-low transition-colors group">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded bg-error/20 text-error flex items-center justify-center font-label-md text-label-md">RF</div>
+                                    <div class="flex flex-col">
+                                        <span class="font-headline-sm text-[16px] leading-tight">Rastgele Orman</span>
+                                        <span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Fiyat Esnekliği</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4"><span class="px-2 py-1 bg-surface-variant text-on-surface-variant rounded text-[11px] font-label-md">Regresyon</span></td>
+                            <td class="p-4 font-data-mono text-error">RMSE: 42.18</td>
+                            <td class="p-4 font-data-mono">R²: 0.610</td>
+                            <td class="p-4 text-on-surface-variant">Yüksek varyans tespit edildi. Fiyat dağılımındaki kalın kuyruklar aşırı öğrenmeye neden oluyor.</td>
+                            <td class="p-4 text-center">
+                                <span class="material-symbols-outlined text-error bg-error/10 rounded-full p-1">warning</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

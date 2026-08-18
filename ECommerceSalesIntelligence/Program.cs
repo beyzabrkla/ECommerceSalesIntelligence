@@ -6,11 +6,20 @@ using Microsoft.ML;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// SQL Server baðlantýsý aktif
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddAutoMapper(cfg => { },
-    typeof(GeneralMapping));
+// CORS ayarý (Frontend farklý porttaysa isteklerin engellenmemesi için)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
+
+builder.Services.AddAutoMapper(cfg => { }, typeof(GeneralMapping));
 
 builder.Services.AddSingleton<MLContext>();
 builder.Services.AddScoped<ForecastingService>();
@@ -18,12 +27,10 @@ builder.Services.AddScoped<ClassificationService>();
 builder.Services.AddScoped<MulticlassClassificationService>();
 builder.Services.AddScoped<AnomalyDetectionService>();
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -34,6 +41,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+// CORS middleware'i buraya eklenmeli
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 

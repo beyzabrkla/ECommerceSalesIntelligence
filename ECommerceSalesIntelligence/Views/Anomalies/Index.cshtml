@@ -1,0 +1,243 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex flex-col w-full px-8 pb-12 gap-8">
+    <div class="flex items-end justify-between w-full">
+        <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-3 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[20px]">warning</span>
+                <span class="font-label-md uppercase tracking-widest text-on-surface-variant">İzleme & Teşhis</span>
+            </div>
+            <h1 class="font-display-lg text-on-surface">Anomali Tespiti - Satış İzleme</h1>
+            <p class="font-body-lg text-on-surface-variant max-w-2xl">Zaman serisi verilerinde beklenen trendlerden sapan anormal satış hareketlerinin SrCNN tabanlı analizi.</p>
+        </div>
+        <div class="flex items-center gap-4 bg-surface-container-high px-6 py-4 rounded-xl shadow-sm">
+            <div class="flex flex-col">
+                <span class="font-label-md text-on-surface-variant uppercase tracking-widest mb-1">Toplam Anomali</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-headline-md text-error">12</span>
+                    <span class="font-body-sm text-on-surface-variant">/ 30 Gün</span>
+                </div>
+            </div>
+            <div class="w-[1px] h-10 bg-outline-variant/30 mx-2"></div>
+            <div class="flex flex-col">
+                <span class="font-label-md text-on-surface-variant uppercase tracking-widest mb-1">Anomali Oranı</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-headline-md text-on-surface">%2.4</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-12 gap-6 w-full">
+        <!-- Sidebar: Detection Parameters -->
+        <div class="col-span-12 lg:col-span-3 flex flex-col gap-6">
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6">
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="material-symbols-outlined text-secondary">tune</span>
+                    <h2 class="font-headline-sm text-on-surface">Tespit Parametreleri</h2>
+                </div>
+                <div class="flex flex-col gap-6">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <label class="font-label-md text-on-surface-variant uppercase">Hassasiyet (P-Value)</label>
+                            <span class="font-data-mono text-secondary">0.95</span>
+                        </div>
+                        <input class="w-full accent-secondary h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer" max="100" min="0" type="range" value="95" />
+                        <div class="flex justify-between text-[11px] font-label-md text-outline">
+                            <span>Düşük Uyarı</span>
+                            <span>Yüksek Uyarı</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="font-label-md text-on-surface-variant uppercase">Algoritma Seçimi</label>
+                        <div class="flex items-center justify-between bg-surface-container p-3 rounded-lg cursor-not-allowed opacity-80">
+                            <span class="font-data-mono text-sm text-on-surface">SrCnnAnomalyEstimator</span>
+                            <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="font-label-md text-on-surface-variant uppercase">Veri Aralığı</label>
+                        <select class="bg-surface border-none text-body-md text-on-surface py-3 px-4 rounded-lg focus:ring-2 focus:ring-secondary/50 outline-none w-full appearance-none shadow-sm shadow-black/5 cursor-pointer">
+                            <option>Son 30 Gün</option>
+                            <option>Son 90 Gün</option>
+                            <option>Yılbaşından Bugüne</option>
+                        </select>
+                    </div>
+                    <div class="mt-4 pt-6 border-t border-outline-variant/30">
+                        <button class="w-full py-3 px-4 bg-primary text-on-primary font-label-md uppercase tracking-wider rounded-lg hover:bg-inverse-surface transition-colors shadow-md flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">autorenew</span>
+                            Analizi Yeniden Çalıştır
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-error-container text-on-error-container rounded-xl p-5 flex gap-3 shadow-sm">
+                <span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5">campaign</span>
+                <div>
+                    <h3 class="font-label-md uppercase mb-1">Sistem Uyarısı</h3>
+                    <p class="font-body-sm opacity-90">Son 48 saat içinde beklenen hacmin 3 katı üzerinde 2 adet "Sıçrama" tespit edildi. Pazarlama kampanyası etkisi incelenmelidir.</p>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content: Chart & Table -->
+        <div class="col-span-12 lg:col-span-9 flex flex-col gap-6">
+            <!-- Chart Card -->
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 flex flex-col h-[400px]">
+                <div class="flex items-start justify-between mb-8">
+                    <div>
+                        <h2 class="font-headline-sm text-on-surface mb-1">Satış Hacmi vs. Beklenen Trend</h2>
+                        <p class="font-body-sm text-on-surface-variant">SrCNN ile tespit edilen günlük toplam satış sapmaları (Son 30 Gün)</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-secondary"></div>
+                            <span class="font-label-md text-on-surface-variant">Gerçek Satış</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-error"></div>
+                            <span class="font-label-md text-on-surface-variant">Anomali Tespit Edildi</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Synthetic Chart Representation -->
+                <div class="flex-1 w-full relative">
+                    <!-- Grid Lines -->
+                    <div class="absolute inset-0 flex flex-col justify-between">
+                        <div class="border-t border-outline-variant/20 w-full"></div>
+                        <div class="border-t border-outline-variant/20 w-full"></div>
+                        <div class="border-t border-outline-variant/20 w-full"></div>
+                        <div class="border-t border-outline-variant/20 w-full"></div>
+                        <div class="border-t border-outline-variant/20 w-full text-[10px] font-data-mono text-outline-variant/70 -mt-2">0</div>
+                    </div>
+                    <!-- Mock Line Chart -->
+                    <div class="absolute inset-0 pt-4 pb-8 pl-8 flex items-end">
+                        <svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 1000 200">
+                            <!-- Expected Trend (Confidence Band) -->
+                            <path d="M0,150 L100,140 L200,160 L300,130 L400,140 L500,120 L600,130 L700,110 L800,120 L900,100 L1000,110 L1000,190 L900,180 L800,200 L700,190 L600,210 L500,200 L400,220 L300,210 L200,240 L100,220 L0,230 Z" fill="rgba(0, 81, 213, 0.05)"></path>
+                            <!-- Actual Volume Line -->
+                            <path d="M0,170 C50,165 80,150 100,160 C150,170 180,140 200,180 C250,220 280,160 300,150 C350,140 380,170 400,160 C420,150 430,40 450,20 C470,60 480,150 500,140 C550,130 580,145 600,150 C650,155 680,130 700,140 C720,150 730,220 750,240 C770,180 780,135 800,140 C850,150 880,120 900,130 C950,140 980,115 1000,120" fill="none" stroke="#0051d5" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+                            <!-- Anomaly Markers -->
+                            <circle class="animate-pulse" cx="450" cy="20" fill="#ba1a1a" r="5"></circle>
+                            <circle class="animate-pulse" cx="750" cy="240" fill="#ba1a1a" r="5"></circle>
+                            <!-- Date Labels X-Axis -->
+                            <g class="text-[10px] font-data-mono fill-outline-variant font-medium" transform="translate(0, 220)">
+                                <text x="0" y="0">Eki 01</text>
+                                <text x="250" y="0">Eki 08</text>
+                                <text x="500" y="0">Eki 15</text>
+                                <text x="750" y="0">Eki 22</text>
+                                <text x="960" y="0">Eki 30</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <!-- Detection Log Table -->
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between">
+                    <h3 class="font-headline-sm text-on-surface">Tespit Günlüğü</h3>
+                    <button class="flex items-center gap-2 text-secondary font-label-md uppercase hover:bg-secondary-container/50 px-3 py-1.5 rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">download</span>
+                        CSV İndir
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-surface-container-low/50">
+                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider">Tarih</th>
+                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-right">Gerçek Hacim</th>
+                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-right">Beklenen Hacim</th>
+                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-center">Anomali Skoru</th>
+                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider">Durum</th>
+                                <th class="px-6 py-4 w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/10">
+                            <!-- Anomaly Row (Spike) -->
+                            <tr class="hover:bg-surface-container-low transition-colors bg-error-container/10">
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-08</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface font-semibold text-right">14,250</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,100 ± 500</td>
+                                <td class="px-6 py-4 font-data-mono text-error font-bold text-center">0.992</td>
+                                <td class="px-6 py-4">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-error/10 text-error font-label-md uppercase">
+                                        <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                        SIÇRAMA
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+                                </td>
+                            </tr>
+                            <!-- Normal Row -->
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-07</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">8,340</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,250 ± 480</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.145</td>
+                                <td class="px-6 py-4">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
+                                        <span class="material-symbols-outlined text-[14px]">check</span>
+                                        NORMAL
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+                                </td>
+                            </tr>
+                            <!-- Normal Row -->
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-06</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">7,920</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,400 ± 510</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.231</td>
+                                <td class="px-6 py-4">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
+                                        <span class="material-symbols-outlined text-[14px]">check</span>
+                                        NORMAL
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+                                </td>
+                            </tr>
+                            <!-- Anomaly Row (Dip) -->
+                            <tr class="hover:bg-surface-container-low transition-colors bg-error-container/10">
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-05</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface font-semibold text-right">2,100</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,550 ± 520</td>
+                                <td class="px-6 py-4 font-data-mono text-error font-bold text-center">0.985</td>
+                                <td class="px-6 py-4">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-error/10 text-error font-label-md uppercase">
+                                        <span class="material-symbols-outlined text-[14px]">trending_down</span>
+                                        DÜŞÜŞ
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+                                </td>
+                            </tr>
+                            <!-- Normal Row -->
+                            <tr class="hover:bg-surface-container-low transition-colors">
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-04</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">8,600</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,700 ± 550</td>
+                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.089</td>
+                                <td class="px-6 py-4">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
+                                        <span class="material-symbols-outlined text-[14px]">check</span>
+                                        NORMAL
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
