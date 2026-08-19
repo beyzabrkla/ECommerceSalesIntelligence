@@ -1,5 +1,4 @@
-﻿using ECommerceSalesIntelligence.Models;
-using ECommerceSalesIntelligence.Services;
+﻿using ECommerceSalesIntelligence.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceSalesIntelligence.Controllers
@@ -8,20 +7,16 @@ namespace ECommerceSalesIntelligence.Controllers
     {
         private readonly MulticlassClassificationService _multiclassService;
 
-        public MulticlassClassificationController(MulticlassClassificationService multiclassService)
+        public MulticlassClassificationController(
+            MulticlassClassificationService multiclassService)
         {
             _multiclassService = multiclassService;
         }
 
         public IActionResult Index()
         {
-            var (metrics, predictions) = _multiclassService.GetMulticlassDashboardData();
-
-            var viewModel = new MulticlassClassificationViewModel
-            {
-                Metrics = metrics,
-                Predictions = predictions
-            };
+            var viewModel =
+                _multiclassService.GetMulticlassDashboardData();
 
             return View(viewModel);
         }

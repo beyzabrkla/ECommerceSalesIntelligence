@@ -2,96 +2,527 @@
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    string Pct(double v) => (v * 100).ToString("N1") + "%";
+
+    string Pct(double value) =>
+        (value * 100).ToString("N1") + "%";
+
+    string Ratio(double value) =>
+        value.ToString("N2");
+
+    string CategoryClass(string category)
+    {
+        return category switch
+        {
+            "YÜKSEK TALEP" =>
+                "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+
+            "ORTA TALEP" =>
+                "bg-amber-500/10 text-amber-700 border-amber-500/20",
+
+            _ =>
+                "bg-rose-500/10 text-rose-700 border-rose-500/20"
+        };
+    }
 }
 
-<div class="flex flex-col w-full font-body-md text-on-surface p-8 gap-stack-lg">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-stack-md w-full max-w-[1400px] mx-auto">
-        <div class="flex flex-col gap-stack-sm">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-secondary">category</span>
-                <span class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Çok Sınıflı Analiz</span>
-            </div>
-            <h1 class="font-display-lg text-display-lg text-on-surface m-0 p-0">Multiclass Sınıflandırma</h1>
-            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl m-0">
-                Ürün / SKU bazlı talep kategorisi ve hacim tahminleme ekranı.
-            </p>
-        </div>
-    </div>
+<div class="min-h-screen bg-surface-container-low px-4 py-4">
 
-    <!-- Multiclass Metrikler Şeridi -->
-    <div class="w-full max-w-[1400px] mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
-            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Makro Doğruluk (Macro Accuracy)</span>
-            <span class="font-headline-md text-headline-md text-on-surface">@Pct(Model?.Metrics?.MacroAccuracy ?? 0)</span>
-        </div>
-        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
-            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Mikro Doğruluk (Micro Accuracy)</span>
-            <span class="font-headline-md text-headline-md text-on-surface">@Pct(Model?.Metrics?.MicroAccuracy ?? 0)</span>
-        </div>
-        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
-            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Log Loss</span>
-            <span class="font-headline-md text-headline-md text-on-surface">@((Model?.Metrics?.LogLoss ?? 0).ToString("F3", System.Globalization.CultureInfo.InvariantCulture))</span>
-        </div>
-    </div>
+    <div class="max-w-[1320px] mx-auto space-y-4">
 
-    <!-- Multiclass Tablo Alanı -->
-    <div class="flex flex-col xl:flex-row gap-stack-lg w-full max-w-[1400px] mx-auto">
-        <div class="flex-1 flex flex-col gap-stack-lg">
-            <section class="bg-surface-container-lowest rounded-2xl shadow-sm p-6 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
-                            <span class="material-symbols-outlined">table_view</span>
-                        </div>
-                        <div>
-                            <h2 class="font-headline-md text-headline-md text-on-surface m-0">Ürün Talep Tahminleri</h2>
-                            <span class="font-body-sm text-body-sm text-on-surface-variant">Çok sınıflı model çıktısı detayları</span>
-                        </div>
-                    </div>
+        <!-- BAŞLIK -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+
+            <div>
+                <div class="flex items-center gap-2 text-secondary text-[11px] font-bold uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[18px]">
+                        category
+                    </span>
+
+                    Çok Sınıflı Analiz
                 </div>
 
-                <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-outline-variant/20 font-label-md text-on-surface-variant">
-                                <th class="py-3 px-4">SKU / Ürün</th>
-                                <th class="py-3 px-4 text-right">Tahmin Edilen Hacim</th>
-                                <th class="py-3 px-4 text-center">Talep Kategorisi</th>
-                                <th class="py-3 px-4 text-right">Güven Skoru</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model?.Predictions != null && Model.Predictions.Any())
+                <h1 class="text-2xl font-bold text-on-surface mt-1">
+                    Ürün Talep Performansı
+                </h1>
+
+                <p class="text-xs text-on-surface-variant mt-1 max-w-2xl">
+                    Şehir ve ürün bazında gelecek ay performansının düşük, orta veya yüksek
+                    sınıfa ayrılması.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+
+                <div class="px-3 py-2 rounded-xl bg-surface border border-outline-variant/30">
+                    <p class="text-[10px] uppercase tracking-wide font-bold text-on-surface-variant">
+                        Şehir
+                    </p>
+
+                    <p class="text-sm font-extrabold text-on-surface">
+                        30
+                    </p>
+                </div>
+
+                <div class="px-3 py-2 rounded-xl bg-surface border border-outline-variant/30">
+                    <p class="text-[10px] uppercase tracking-wide font-bold text-on-surface-variant">
+                        Ürün
+                    </p>
+
+                    <p class="text-sm font-extrabold text-on-surface">
+                        12
+                    </p>
+                </div>
+
+                <div class="px-3 py-2 rounded-xl bg-secondary-container border border-outline-variant/20">
+                    <p class="text-[10px] uppercase tracking-wide font-bold text-on-secondary-container">
+                        Şehir + Ürün
+                    </p>
+
+                    <p class="text-sm font-extrabold text-on-secondary-container">
+                        360
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- METODOLOJİ + SINIF SINIRLARI -->
+        <section class="bg-surface rounded-2xl border border-outline-variant/30 shadow-sm p-4">
+
+            <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-4 items-center">
+
+                <div>
+
+                    <div class="flex items-center gap-2">
+
+                        <div class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[18px]">
+                                psychology
+                            </span>
+                        </div>
+
+                        <div>
+                            <h2 class="text-sm font-bold text-on-surface">
+                                Model Mantığı
+                            </h2>
+
+                            <p class="text-[11px] text-on-surface-variant">
+                                Performans oranına göre sınıflandırma
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <p class="text-xs text-on-surface-variant leading-5 mt-3">
+                        Model, her şehir + ürün için son üç aylık satış davranışını kullanarak
+                        gelecek ayın performans sınıfını tahmin eder.
+                        Sınıf sınırları,
+                        <strong class="text-on-surface">gelecek ay / son 3 ay ortalaması</strong>
+                        oranlarının %33,33 ve %66,67 yüzdeliklerinden hesaplanır.
+                    </p>
+
+                    <div class="mt-2 px-3 py-2 rounded-xl bg-primary-container/40 border border-outline-variant/20">
+                        <p class="text-[11px] text-on-surface-variant leading-4">
+                            <strong class="text-on-surface">Önemli:</strong>
+                            Eğitim sırasında geçmiş dönemlerin gerçek gelecek ay satışları
+                            yalnızca sınıf etiketini oluşturmak için kullanılır.
+                            Tahmin aşamasında gerçek gelecek ay satışı modele verilmez.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <!-- SINIFLAR -->
+
+                <div class="grid grid-cols-3 gap-2">
+
+                    <div class="rounded-xl bg-rose-500/5 border border-rose-500/15 px-3 py-3">
+
+                        <p class="text-[10px] uppercase font-bold tracking-wide text-rose-600">
+                            DÜŞÜK
+                        </p>
+
+                        <p class="text-lg font-extrabold text-on-surface mt-1">
+                            ≤ @Ratio(Model.LowUpper)
+                        </p>
+
+                        <p class="text-[10px] text-on-surface-variant mt-0.5">
+                            Ortalamanın altında
+                        </p>
+
+                    </div>
+
+
+                    <div class="rounded-xl bg-amber-500/5 border border-amber-500/15 px-3 py-3">
+
+                        <p class="text-[10px] uppercase font-bold tracking-wide text-amber-600">
+                            ORTA
+                        </p>
+
+                        <p class="text-lg font-extrabold text-on-surface mt-1">
+                            @Ratio(Model.LowUpper)–@Ratio(Model.MediumUpper)
+                        </p>
+
+                        <p class="text-[10px] text-on-surface-variant mt-0.5">
+                            Ortalama civarı
+                        </p>
+
+                    </div>
+
+
+                    <div class="rounded-xl bg-emerald-500/5 border border-emerald-500/15 px-3 py-3">
+
+                        <p class="text-[10px] uppercase font-bold tracking-wide text-emerald-600">
+                            YÜKSEK
+                        </p>
+
+                        <p class="text-lg font-extrabold text-on-surface mt-1">
+                            > @Ratio(Model.MediumUpper)
+                        </p>
+
+                        <p class="text-[10px] text-on-surface-variant mt-0.5">
+                            Ortalamanın üzerinde
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- METRİKLER -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+            <div class="bg-surface rounded-xl border border-outline-variant/30 p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                            Mikro Doğruluk
+                        </p>
+
+                        <p class="text-xl font-extrabold text-on-surface mt-1">
+                            @Pct(Model.Metrics?.MicroAccuracy ?? 0)
+                        </p>
+                    </div>
+
+                    <span class="material-symbols-outlined text-secondary text-xl">
+                        speed
+                    </span>
+                </div>
+
+                <p class="text-[10px] text-on-surface-variant mt-1">
+                    Tüm test tahminlerindeki doğru sonuç oranı
+                </p>
+            </div>
+
+
+            <div class="bg-surface rounded-xl border border-outline-variant/30 p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                            Makro Doğruluk
+                        </p>
+
+                        <p class="text-xl font-extrabold text-on-surface mt-1">
+                            @Pct(Model.Metrics?.MacroAccuracy ?? 0)
+                        </p>
+                    </div>
+
+                    <span class="material-symbols-outlined text-secondary text-xl">
+                        analytics
+                    </span>
+                </div>
+
+                <p class="text-[10px] text-on-surface-variant mt-1">
+                    Üç sınıfın ortalama başarısı
+                </p>
+            </div>
+
+
+            <div class="bg-surface rounded-xl border border-outline-variant/30 p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                            Log Loss
+                        </p>
+
+                        <p class="text-xl font-extrabold text-on-surface mt-1">
+                            @((Model.Metrics?.LogLoss ?? 0).ToString("N3"))
+                        </p>
+                    </div>
+
+                    <span class="material-symbols-outlined text-secondary text-xl">
+                        query_stats
+                    </span>
+                </div>
+
+                <p class="text-[10px] text-on-surface-variant mt-1">
+                    Daha düşük değer daha iyidir
+                </p>
+            </div>
+
+        </div>
+
+
+        <!-- TAHMİN TABLOSU -->
+        <section class="bg-surface rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+
+            <div class="px-4 py-3 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+
+                <div>
+
+                    <h2 class="text-sm font-bold text-on-surface">
+                        Şehir ve Ürün Bazında Gelecek Ay Tahminleri
+                    </h2>
+
+                    <p class="text-[11px] text-on-surface-variant mt-0.5">
+                        Son üç aylık satış davranışına göre performans sınıfı
+                    </p>
+
+                </div>
+
+                <span class="px-2.5 py-1 rounded-full bg-surface-container text-[10px] font-bold text-on-surface-variant">
+                    @Model.Predictions.Count.ToString("N0") sonuç
+                </span>
+
+            </div>
+
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full text-left">
+
+                    <thead class="bg-surface-container-low text-[10px] uppercase tracking-wide text-on-surface-variant">
+
+                        <tr>
+
+                            <th class="px-4 py-2.5">
+                                Şehir
+                            </th>
+
+                            <th class="px-4 py-2.5">
+                                Ürün
+                            </th>
+
+                            <th class="px-4 py-2.5 text-right">
+                                Geçen Ay
+                            </th>
+
+                            <th class="px-4 py-2.5 text-right">
+                                3 Ay Ort.
+                            </th>
+
+                            <th class="px-4 py-2.5 text-center">
+                                Tahmin
+                            </th>
+
+                            <th class="px-4 py-2.5 text-right">
+                                Güven
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody class="divide-y divide-outline-variant/10">
+
+                        @if (Model.Predictions != null && Model.Predictions.Any())
+                        {
+                            @foreach (var prediction in Model.Predictions)
                             {
-                                foreach (var p in Model.Predictions)
-                                {
-                                    <tr class="border-b border-outline-variant/10 hover:bg-surface-container-low transition-colors">
-                                        <td class="py-3 px-4 font-data-mono text-on-surface font-bold">@p.Sku</td>
-                                        <td class="py-3 px-4 font-data-mono text-on-surface text-right">@p.PredictedVolume.ToString("N0")</td>
-                                        <td class="py-3 px-4 text-center">
-                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-container">
-                                                @p.DemandCategory
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4 font-data-mono text-secondary text-right font-bold">
-                                            %@((p.Confidence * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="4" class="py-6 text-center text-on-surface-variant">Gösterilecek çok sınıflı tahmin verisi bulunamadı.</td>
+                                <tr class="prediction-row hover:bg-surface-container-low transition-colors">
+
+                                    <td class="px-4 py-2.5 text-xs font-semibold text-on-surface whitespace-nowrap">
+                                        @prediction.City
+                                    </td>
+
+                                    <td class="px-4 py-2.5 text-xs text-on-surface-variant whitespace-nowrap">
+                                        @prediction.ProductName
+                                    </td>
+
+                                    <td class="px-4 py-2.5 text-right font-mono text-xs">
+                                        @prediction.PredictedVolume.ToString("N0")
+                                    </td>
+
+                                    <td class="px-4 py-2.5 text-right font-mono text-xs font-bold">
+                                        @prediction.Average3.ToString("N0")
+                                    </td>
+
+                                    <td class="px-4 py-2.5 text-center">
+
+                                        <span class="inline-flex px-2 py-1 rounded-full border text-[10px] font-bold @CategoryClass(prediction.DemandCategory)">
+                                            @prediction.DemandCategory
+                                        </span>
+
+                                    </td>
+
+                                    <td class="px-4 py-2.5 text-right font-mono text-xs font-bold text-secondary">
+                                        @Pct(prediction.Confidence)
+                                    </td>
+
                                 </tr>
                             }
-                        </tbody>
-                    </table>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center">
+
+                                    <span class="material-symbols-outlined text-3xl text-on-surface-variant">
+                                        data_alert
+                                    </span>
+
+                                    <p class="mt-2 text-xs font-semibold text-on-surface">
+                                        Tahmin verisi bulunamadı.
+                                    </p>
+
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- SAYFALAMA -->
+
+            <div class="px-4 py-3 border-t border-outline-variant/20 flex items-center justify-between gap-3">
+
+                <span id="paginationInfo"
+                      class="text-[10px] text-on-surface-variant">
+                </span>
+
+                <div class="flex items-center gap-1.5">
+
+                    <button id="previousPage"
+                            type="button"
+                            class="px-2.5 py-1 rounded-md bg-surface-container text-[10px] font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed">
+                        Önceki
+                    </button>
+
+                    <span id="currentPage"
+                          class="px-2 text-[10px] font-bold text-on-surface">
+                    </span>
+
+                    <button id="nextPage"
+                            type="button"
+                            class="px-2.5 py-1 rounded-md bg-surface-container text-[10px] font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed">
+                        Sonraki
+                    </button>
+
                 </div>
-            </section>
-        </div>
+
+            </div>
+
+        </section>
+
     </div>
+
 </div>
+
+@section Scripts {
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const rows =
+                Array.from(
+                    document.querySelectorAll(".prediction-row")
+                );
+
+            const rowsPerPage = 15;
+            let page = 1;
+
+            const totalPages =
+                Math.max(
+                    1,
+                    Math.ceil(rows.length / rowsPerPage)
+                );
+
+            const previousButton =
+                document.getElementById("previousPage");
+
+            const nextButton =
+                document.getElementById("nextPage");
+
+            const currentPage =
+                document.getElementById("currentPage");
+
+            const paginationInfo =
+                document.getElementById("paginationInfo");
+
+            function renderPage() {
+
+                const start =
+                    (page - 1) * rowsPerPage;
+
+                const end =
+                    start + rowsPerPage;
+
+                rows.forEach(function (row, index) {
+
+                    row.style.display =
+                        index >= start &&
+                        index < end
+                            ? ""
+                            : "none";
+
+                });
+
+                const visibleStart =
+                    rows.length === 0
+                        ? 0
+                        : start + 1;
+
+                const visibleEnd =
+                    Math.min(
+                        end,
+                        rows.length
+                    );
+
+                paginationInfo.textContent =
+                    `${visibleStart}-${visibleEnd} / ${rows.length} sonuç`;
+
+                currentPage.textContent =
+                    `${page} / ${totalPages}`;
+
+                previousButton.disabled =
+                    page === 1;
+
+                nextButton.disabled =
+                    page === totalPages;
+            }
+
+            previousButton.addEventListener(
+                "click",
+                function () {
+                    if (page > 1) {
+                        page--;
+                        renderPage();
+                    }
+                }
+            );
+
+            nextButton.addEventListener(
+                "click",
+                function () {
+                    if (page < totalPages) {
+                        page++;
+                        renderPage();
+                    }
+                }
+            );
+
+            renderPage();
+        });
+    </script>
+}

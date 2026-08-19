@@ -5,9 +5,9 @@ namespace ECommerceSalesIntelligence.Models.Classification
     public class SalesMulticlassPrediction
     {
         [ColumnName("PredictedLabel")]
-        public string PredictedLabel { get; set; }
+        public string PredictedLabel { get; set; } = string.Empty;
 
         [ColumnName("Score")]
-        public float[] Score { get; set; }
+        public float[] Score { get; set; } = Array.Empty<float>();
     }
 }
