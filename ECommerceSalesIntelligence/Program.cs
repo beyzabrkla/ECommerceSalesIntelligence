@@ -23,9 +23,10 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(GeneralMapping));
 
 builder.Services.AddSingleton<MLContext>();
 builder.Services.AddScoped<ForecastingService>();
-builder.Services.AddScoped<ClassificationService>();
+builder.Services.AddScoped<BinaryClassificationService>();
 builder.Services.AddScoped<MulticlassClassificationService>();
 builder.Services.AddScoped<AnomalyDetectionService>();
+builder.Services.AddScoped<ClusteringService>();
 
 builder.Services.AddControllersWithViews();
 

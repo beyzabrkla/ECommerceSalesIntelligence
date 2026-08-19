@@ -1,12 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ECommerceSalesIntelligence.Services;
 
 namespace ECommerceSalesIntelligence.Controllers
 {
     public class ClustersController : Controller
     {
-        public IActionResult Index()
+        private readonly ClusteringService _clusteringService;
+
+        public ClustersController(ClusteringService clusteringService)
         {
-            return View();
+            _clusteringService = clusteringService;
+        }
+
+        public IActionResult Index(int count = 3)
+        {
+            var model = _clusteringService.TrainAndCluster(count);
+            return View(model);
         }
     }
 }

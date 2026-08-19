@@ -1,0 +1,97 @@
+﻿@model ECommerceSalesIntelligence.Models.MulticlassClassificationViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string Pct(double v) => (v * 100).ToString("N1") + "%";
+}
+
+<div class="flex flex-col w-full font-body-md text-on-surface p-8 gap-stack-lg">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-stack-md w-full max-w-[1400px] mx-auto">
+        <div class="flex flex-col gap-stack-sm">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary">category</span>
+                <span class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Çok Sınıflı Analiz</span>
+            </div>
+            <h1 class="font-display-lg text-display-lg text-on-surface m-0 p-0">Multiclass Sınıflandırma</h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl m-0">
+                Ürün / SKU bazlı talep kategorisi ve hacim tahminleme ekranı.
+            </p>
+        </div>
+    </div>
+
+    <!-- Multiclass Metrikler Şeridi -->
+    <div class="w-full max-w-[1400px] mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
+            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Makro Doğruluk (Macro Accuracy)</span>
+            <span class="font-headline-md text-headline-md text-on-surface">@Pct(Model?.Metrics?.MacroAccuracy ?? 0)</span>
+        </div>
+        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
+            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Mikro Doğruluk (Micro Accuracy)</span>
+            <span class="font-headline-md text-headline-md text-on-surface">@Pct(Model?.Metrics?.MicroAccuracy ?? 0)</span>
+        </div>
+        <div class="bg-primary-container text-on-primary-container rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden">
+            <span class="font-label-md text-label-md text-on-surface-variant mb-1">Log Loss</span>
+            <span class="font-headline-md text-headline-md text-on-surface">@((Model?.Metrics?.LogLoss ?? 0).ToString("F3", System.Globalization.CultureInfo.InvariantCulture))</span>
+        </div>
+    </div>
+
+    <!-- Multiclass Tablo Alanı -->
+    <div class="flex flex-col xl:flex-row gap-stack-lg w-full max-w-[1400px] mx-auto">
+        <div class="flex-1 flex flex-col gap-stack-lg">
+            <section class="bg-surface-container-lowest rounded-2xl shadow-sm p-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                            <span class="material-symbols-outlined">table_view</span>
+                        </div>
+                        <div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface m-0">Ürün Talep Tahminleri</h2>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Çok sınıflı model çıktısı detayları</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-outline-variant/20 font-label-md text-on-surface-variant">
+                                <th class="py-3 px-4">SKU / Ürün</th>
+                                <th class="py-3 px-4 text-right">Tahmin Edilen Hacim</th>
+                                <th class="py-3 px-4 text-center">Talep Kategorisi</th>
+                                <th class="py-3 px-4 text-right">Güven Skoru</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model?.Predictions != null && Model.Predictions.Any())
+                            {
+                                foreach (var p in Model.Predictions)
+                                {
+                                    <tr class="border-b border-outline-variant/10 hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-data-mono text-on-surface font-bold">@p.Sku</td>
+                                        <td class="py-3 px-4 font-data-mono text-on-surface text-right">@p.PredictedVolume.ToString("N0")</td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-container">
+                                                @p.DemandCategory
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 font-data-mono text-secondary text-right font-bold">
+                                            %@((p.Confidence * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="py-6 text-center text-on-surface-variant">Gösterilecek çok sınıflı tahmin verisi bulunamadı.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

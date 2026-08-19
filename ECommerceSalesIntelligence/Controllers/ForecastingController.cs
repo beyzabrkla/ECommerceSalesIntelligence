@@ -2,7 +2,7 @@
 
 namespace ECommerceSalesIntelligence.Controllers
 {
-    public class ClassificationsController : Controller
+    public class ForecastingController : Controller
     {
         public IActionResult Index()
         {

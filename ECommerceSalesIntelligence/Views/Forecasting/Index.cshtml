@@ -221,8 +221,7 @@
             button.disabled = true;
             button.classList.add("opacity-70", "cursor-not-allowed");
             statusBadge.classList.remove("hidden");
-            statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Hesapalanıyor`;
-
+            statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Hesaplanıyor`;
             chartTitle.innerText = `${city.toUpperCase()} — Satış Tahmini`;
             chartSubTitle.innerText = "SSA modeli çalıştırılıyor...";
             statusTitle.innerText = "Tahmin hesaplanıyor";
@@ -278,7 +277,6 @@
                 const historical = result.historicalDetails || [];
                 const details = result.details || [];
 
-                // --- DEĞİŞİKLİK BURADA: Geçmiş veriler tablodan çıkarıldı, sadece tahminler listeleniyor ---
                 tableTitle.innerText = "7 GÜNLÜK TAHMİN DETAYI";
 
                 let allDates = [];
@@ -287,7 +285,7 @@
                 let upperBounds = [];
                 let lowerBounds = [];
 
-                // Grafik çizimi için geçmiş verileri arka planda diziye atıyoruz (Tabloya eklemiyoruz)
+                // Grafik çizimi için geçmiş verileri arka planda diziye atıyoruz
                 if (historical.length > 0) {
                     historical.forEach(item => {
                         allDates.push(item.date);

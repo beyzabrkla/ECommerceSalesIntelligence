@@ -1,78 +1,105 @@
-﻿using AutoMapper;
-using ECommerceSalesIntelligence.Context;
+﻿using ECommerceSalesIntelligence.Context;
 using ECommerceSalesIntelligence.Models;
+using ECommerceSalesIntelligence.Models.Classification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
+using Microsoft.ML.Data;
 
 namespace ECommerceSalesIntelligence.Services
 {
     public class MulticlassClassificationService
     {
         private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
         private readonly MLContext _mlContext;
 
-        public MulticlassClassificationService(AppDbContext context, IMapper mapper, MLContext mlContext)
+        public MulticlassClassificationService(AppDbContext context, MLContext mlContext)
         {
             _context = context;
-            _mapper = mapper;
             _mlContext = mlContext;
         }
 
-        public SalesMulticlassPrediction TrainAndEvaluate()
+        public (MulticlassClassificationMetrics Metrics, List<MulticlassPredictionViewModel> Predictions) GetMulticlassDashboardData()
         {
-            IEnumerable<SalesMulticlassInput> GetStreamingData()
-            {
-                foreach (var record in _context.SalesRecords.AsNoTracking().AsEnumerable())
-                {
-                    // Satış miktarına göre Low, Medium, High sınırlarını belirliyoruz
-                    string performanceLabel = record.Quantity switch
-                    {
-                        < 5 => "Low",
-                        < 20 => "Medium",
-                        _ => "High"
-                    };
+            // Taraflı (biased) seçim yerine rastgele + yeterli büyüklükte örneklem
+            var dbRecords = _context.SalesRecords
+                .AsNoTracking()
+                .OrderBy(x => Guid.NewGuid())
+                .Take(3000)
+                .ToList();
 
-                    var input = _mapper.Map<SalesMulticlassInput>(record);
-                    input.Label = performanceLabel;
-                    yield return input;
-                }
+            var multiclassInputData = new List<SalesMulticlassInput>();
+
+            foreach (var record in dbRecords)
+            {
+                string performanceLabel = record.Quantity switch
+                {
+                    < 4000 => "Low",
+                    < 8000 => "Medium",
+                    _ => "High"
+                };
+
+                multiclassInputData.Add(new SalesMulticlassInput
+                {
+                    UnitPrice = (float)record.UnitPrice,
+                    Quantity = (float)record.Quantity,
+                    DiscountRate = (float)record.DiscountRate,
+                    IsCampaign = record.IsCampaign,
+                    Label = performanceLabel
+                });
             }
 
-            IDataView dataView = _mlContext.Data.LoadFromEnumerable<SalesMulticlassInput>(GetStreamingData());
+            if (!multiclassInputData.Any())
+                return (null, new List<MulticlassPredictionViewModel>());
 
-            // Train / Test Ayrımı (%80 Eğitim, %20 Test)
+            // Güvenlik kontrolü: en az 2 farklı sınıf yoksa eğitim patlar, anlamlı hata fırlat
+            var distinctLabels = multiclassInputData.Select(x => x.Label).Distinct().Count();
+            if (distinctLabels < 2)
+                throw new InvalidOperationException(
+                    $"Eğitim verisinde yalnızca {distinctLabels} farklı sınıf var. Örneklem büyütülmeli veya sınıf sınırları veri dağılımına göre gözden geçirilmeli.");
+
+            var dataView = _mlContext.Data.LoadFromEnumerable(multiclassInputData);
             var splitData = _mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2);
 
-            // Pipeline: Özellikleri birleştir ve Multiclass eğitmeni seç
             var pipeline = _mlContext.Transforms.Concatenate("Features",
                     nameof(SalesMulticlassInput.UnitPrice),
                     nameof(SalesMulticlassInput.Quantity),
                     nameof(SalesMulticlassInput.DiscountRate))
-                // Metin etiketlerini sayısal anahtarlara dönüştürüyoruz
                 .Append(_mlContext.Transforms.Conversion.MapValueToKey("Label"))
-                // Çoklu sınıflandırma için SdcaMaximumEntropy algoritması
                 .Append(_mlContext.MulticlassClassification.Trainers.SdcaMaximumEntropy("Label", "Features"))
-                // Tahmin edilen sayısal anahtarı tekrar orijinal metne ("Low", "Medium", "High") çeviriyoruz
                 .Append(_mlContext.Transforms.Conversion.MapKeyToValue("PredictedLabel"));
 
             var model = pipeline.Fit(splitData.TrainSet);
 
-            // Değerlendirme Metrikleri
             var transformedTestSet = model.Transform(splitData.TestSet);
-            var metrics = _mlContext.MulticlassClassification.Evaluate(transformedTestSet);
+            var metrics = _mlContext.MulticlassClassification.Evaluate(transformedTestSet, labelColumnName: "Label", predictedLabelColumnName: "PredictedLabel");
 
             var predictionEngine = _mlContext.Model.CreatePredictionEngine<SalesMulticlassInput, SalesMulticlassPrediction>(model);
 
-            var sample = new SalesMulticlassInput
-            {
-                UnitPrice = 1200f,
-                Quantity = 15f,
-                DiscountRate = 0.15f,
-                IsCampaign = true
-            };
+            // Dashboard tablosu için makul sayıda örnek göster (ör. ilk 100)
+            var resultList = new List<MulticlassPredictionViewModel>();
+            int index = 1;
 
-            return predictionEngine.Predict(sample);
+            foreach (var item in multiclassInputData.Take(100))
+            {
+                var pred = predictionEngine.Predict(item);
+
+                float confidence = 0.85f;
+                if (pred.Score != null && pred.Score.Length > 0)
+                {
+                    float maxScore = pred.Score.Max();
+                    confidence = 1.0f / (1.0f + (float)Math.Exp(-maxScore));
+                }
+
+                resultList.Add(new MulticlassPredictionViewModel
+                {
+                    Sku = $"SKU-{index++:000}",
+                    PredictedVolume = item.Quantity,
+                    Confidence = Math.Clamp(confidence, 0.5f, 0.99f),
+                    DemandCategory = pred.PredictedLabel == "High" ? "YÜKSEK TALEP" : (pred.PredictedLabel == "Medium" ? "ORTA TALEP" : "DÜŞÜK TALEP")
+                });
+            }
+
+            return (metrics, resultList);
         }
     }
 }

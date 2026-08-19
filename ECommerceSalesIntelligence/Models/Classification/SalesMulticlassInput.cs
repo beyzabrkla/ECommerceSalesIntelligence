@@ -1,4 +1,4 @@
-﻿namespace ECommerceSalesIntelligence.Models
+﻿namespace ECommerceSalesIntelligence.Models.Classification
 {
     public class SalesMulticlassInput
     {
