@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ECommerceSalesIntelligence.Services;
+﻿using ECommerceSalesIntelligence.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceSalesIntelligence.Controllers
 {
@@ -12,9 +12,13 @@ namespace ECommerceSalesIntelligence.Controllers
             _clusteringService = clusteringService;
         }
 
-        public IActionResult Index(int count = 3)
+        // Clustering analizini çalıştırır ve sonuçları View'a gönderir.
+        public async Task<IActionResult> Index(int count = 4)
         {
-            var model = _clusteringService.TrainAndCluster(count);
+            // Şehirleri K-Means algoritmasıyla kümelendirir.
+            var model = await _clusteringService.TrainAndClusterAsync(count);
+
+            // Kümeleme sonuçlarını sayfaya gönderir.
             return View(model);
         }
     }

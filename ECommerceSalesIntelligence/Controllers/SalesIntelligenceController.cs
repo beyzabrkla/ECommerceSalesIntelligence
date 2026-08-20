@@ -1,6 +1,5 @@
 ﻿using ECommerceSalesIntelligence.Context;
 using ECommerceSalesIntelligence.Models;
-using ECommerceSalesIntelligence.Models.Classification;
 using ECommerceSalesIntelligence.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,10 +33,7 @@ namespace ECommerceSalesIntelligence.Controllers
             _clusteringService = clusteringService;
         }
 
-        // ============================================================
-        // FORECASTING
-        // ============================================================
-
+        // Belirtilen şehir için gelecek günlerin satış tahminini oluşturur.
         [HttpGet("forecast")]
         public async Task<ActionResult<SalesPrediction>> GetSalesForecast(
             [FromQuery] string city,
@@ -60,27 +56,20 @@ namespace ECommerceSalesIntelligence.Controllers
                 {
                     return BadRequest(new
                     {
-                        message =
-                            "Tahmin günü 1 ile 30 arasında olmalıdır."
+                        message = "Tahmin günü 1 ile 30 arasında olmalıdır."
                     });
                 }
 
-                if (confidenceLevel <= 0 ||
-                    confidenceLevel >= 1)
+                if (confidenceLevel <= 0 || confidenceLevel >= 1)
                 {
                     return BadRequest(new
                     {
-                        message =
-                            "Confidence level 0 ile 1 arasında olmalıdır."
+                        message = "Confidence level 0 ile 1 arasında olmalıdır."
                     });
                 }
 
-                var prediction =
-                    await _forecastingService
-                        .PredictNextDaysAsync(
-                            city,
-                            horizon,
-                            confidenceLevel);
+                var prediction = await _forecastingService
+                    .PredictNextDaysAsync(city, horizon, confidenceLevel);
 
                 return Ok(prediction);
             }
@@ -93,129 +82,93 @@ namespace ECommerceSalesIntelligence.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                Console.WriteLine("FORECAST VALIDATION/MODEL HATASI:");
-                Console.WriteLine(ex);
-
                 return StatusCode(500, new
                 {
-                    message =
-                        "Tahmin modeli çalıştırılırken hata oluştu.",
+                    message = "Tahmin modeli çalıştırılırken hata oluştu.",
                     error = ex.Message,
                     innerError = ex.InnerException?.Message
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine("FORECAST HATASI:");
-                Console.WriteLine(ex);
-
                 return StatusCode(500, new
                 {
-                    message =
-                        "Tahmin oluşturulurken beklenmeyen bir hata oluştu.",
+                    message = "Tahmin oluşturulurken beklenmeyen bir hata oluştu.",
                     error = ex.Message,
                     innerError = ex.InnerException?.Message
                 });
             }
         }
 
-        // ============================================================
-        // ŞEHİRLER
-        // ============================================================
-
+        // Veritabanındaki benzersiz şehirleri alfabetik olarak getirir.
         [HttpGet("cities")]
         public async Task<ActionResult<List<string>>> GetCities()
         {
             try
             {
-                var cities =
-                    await _context.SalesRecords
-                        .AsNoTracking()
-                        .Where(x =>
-                            !string.IsNullOrWhiteSpace(x.City))
-                        .Select(x => x.City)
-                        .Distinct()
-                        .OrderBy(x => x)
-                        .ToListAsync();
+                var cities = await _context.SalesRecords
+                    .AsNoTracking()
+                    .Where(x => !string.IsNullOrWhiteSpace(x.City))
+                    .Select(x => x.City)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToListAsync();
 
                 return Ok(cities);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("CITY HATASI:");
-                Console.WriteLine(ex);
-
                 return StatusCode(500, new
                 {
-                    message =
-                        "Şehirler alınırken hata oluştu.",
+                    message = "Şehirler alınırken hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        // ============================================================
-        // ÜRÜNLER
-        // ============================================================
-
+        // İsteğe bağlı şehir filtresiyle benzersiz ürünleri getirir.
         [HttpGet("products")]
         public async Task<ActionResult<List<string>>> GetProducts(
             [FromQuery] string? city = null)
         {
             try
             {
-                var query =
-                    _context.SalesRecords
-                        .AsNoTracking()
-                        .Where(x =>
-                            !string.IsNullOrWhiteSpace(
-                                x.ProductName));
+                var query = _context.SalesRecords
+                    .AsNoTracking()
+                    .Where(x => !string.IsNullOrWhiteSpace(x.ProductName));
 
                 if (!string.IsNullOrWhiteSpace(city))
                 {
                     city = city.Trim();
-
-                    query =
-                        query.Where(x =>
-                            x.City == city);
+                    query = query.Where(x => x.City == city);
                 }
 
-                var products =
-                    await query
-                        .Select(x => x.ProductName)
-                        .Distinct()
-                        .OrderBy(x => x)
-                        .ToListAsync();
+                var products = await query
+                    .Select(x => x.ProductName)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToListAsync();
 
                 return Ok(products);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("PRODUCT HATASI:");
-                Console.WriteLine(ex);
-
                 return StatusCode(500, new
                 {
-                    message =
-                        "Ürünler alınırken hata oluştu.",
+                    message = "Ürünler alınırken hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        // ============================================================
-        // BINARY CLASSIFICATION
-        // ============================================================
-
+        // Binary classification modelinden dashboard verilerini getirir.
         [HttpGet("binary-dashboard")]
-        public ActionResult<ClassificationDashboardViewModel>
-            GetBinaryDashboard()
+        public ActionResult<ClassificationDashboardViewModel> GetBinaryDashboard()
         {
             try
             {
-                var dashboardData =
-                    _binaryClassificationService
-                        .GetBinaryDashboardData();
+                var dashboardData = _binaryClassificationService
+                    .GetBinaryDashboardData();
 
                 return Ok(dashboardData);
             }
@@ -223,25 +176,20 @@ namespace ECommerceSalesIntelligence.Controllers
             {
                 return StatusCode(500, new
                 {
-                    message =
-                        "Binary dashboard verileri yüklenirken hata oluştu.",
+                    message = "Binary dashboard verileri yüklenirken hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        // ============================================================
-        // MULTICLASS CLASSIFICATION
-        // ============================================================
-
+        // Satış davranışlarını multiclass classification ile sınıflandırır.
         [HttpGet("multiclass-dashboard")]
         public ActionResult RunMulticlassClassification()
         {
             try
             {
-                var predictions =
-                    _multiclassService
-                        .GetMulticlassDashboardData();
+                var predictions = _multiclassService
+                    .GetMulticlassDashboardData();
 
                 return Ok(predictions);
             }
@@ -249,52 +197,37 @@ namespace ECommerceSalesIntelligence.Controllers
             {
                 return StatusCode(500, new
                 {
-                    message =
-                        "Multiclass classification sırasında hata oluştu.",
+                    message = "Multiclass classification sırasında hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        // ============================================================
-        // ANOMALY DETECTION
-        // ============================================================
-
+        // Normal davranıştan ciddi şekilde sapan satış günlerini tespit eder.
         [HttpGet("anomalies")]
-        public async Task<ActionResult<
-            List<SalesAnomalyResultViewModel>>>
-            GetAnomalies()
+        public async Task<ActionResult<List<SalesAnomalyResultViewModel>>> GetAnomalies()
         {
             try
             {
-                var anomalies =
-                    await _anomalyService
-                        .DetectAnomaliesAsync();
+                var anomalies = await _anomalyService
+                    .DetectAnomaliesAsync();
 
                 return Ok(anomalies);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ANOMALY HATASI:");
-                Console.WriteLine(ex);
-
                 return StatusCode(500, new
                 {
-                    message =
-                        "Anomali tespiti sırasında hata oluştu.",
+                    message = "Anomali tespiti sırasında hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        // ============================================================
-        // CLUSTERING
-        // ============================================================
-
+        // Şehirleri satış özelliklerine göre K-Means ile kümelendirir.
         [HttpGet("clusters")]
-        public ActionResult<List<ClusterResultViewModel>>
-            GetClusters(
-                [FromQuery] int count = 3)
+        public async Task<ActionResult<List<ClusterResultViewModel>>> GetClusters(
+            [FromQuery] int count = 3)
         {
             try
             {
@@ -302,8 +235,7 @@ namespace ECommerceSalesIntelligence.Controllers
                 {
                     return BadRequest(new
                     {
-                        message =
-                            "Küme sayısı en az 2 olmalıdır."
+                        message = "Küme sayısı en az 2 olmalıdır."
                     });
                 }
 
@@ -311,14 +243,12 @@ namespace ECommerceSalesIntelligence.Controllers
                 {
                     return BadRequest(new
                     {
-                        message =
-                            "Küme sayısı en fazla 20 olabilir."
+                        message = "Küme sayısı en fazla 20 olabilir."
                     });
                 }
 
-                var clusters =
-                    _clusteringService
-                        .TrainAndCluster(count);
+                var clusters = await _clusteringService
+                    .TrainAndClusterAsync(count);
 
                 return Ok(clusters);
             }
@@ -326,8 +256,7 @@ namespace ECommerceSalesIntelligence.Controllers
             {
                 return StatusCode(500, new
                 {
-                    message =
-                        "Kümeleme yapılırken hata oluştu.",
+                    message = "Kümeleme yapılırken hata oluştu.",
                     error = ex.Message
                 });
             }

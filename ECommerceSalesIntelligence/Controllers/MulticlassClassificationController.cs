@@ -7,17 +7,14 @@ namespace ECommerceSalesIntelligence.Controllers
     {
         private readonly MulticlassClassificationService _multiclassService;
 
-        public MulticlassClassificationController(
-            MulticlassClassificationService multiclassService)
+        public MulticlassClassificationController(MulticlassClassificationService multiclassService)
         {
             _multiclassService = multiclassService;
         }
 
         public IActionResult Index()
         {
-            var viewModel =
-                _multiclassService.GetMulticlassDashboardData();
-
+            var viewModel = _multiclassService.GetMulticlassDashboardData();
             return View(viewModel);
         }
     }

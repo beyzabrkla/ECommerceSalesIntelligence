@@ -5,440 +5,402 @@ using Microsoft.ML;
 
 namespace ECommerceSalesIntelligence.Services
 {
+    /// Günlük satış serilerindeki olağan dışı davranışları ML.NET SSA Spike Detection algoritması ile tespit eder.
     public class AnomalyDetectionService
     {
         private readonly AppDbContext _context;
         private readonly MLContext _mlContext;
-        private readonly ForecastingService _forecastingService;
+
+        // SSA için kullanılan temel parametreler.
+        private const int TrainingWindowSize = 60;
+        private const int SeasonalityWindowSize = 7;
+        private const double Confidence = 95.0;
+        private const int PValueHistoryLength = 30;
+
+        // Bir serinin analiz edilebilmesi için minimum veri şartları.
+        private const int MinimumSeriesLength = 60;
+        private const int MinimumSalesDays = 30;
 
         public AnomalyDetectionService(
             AppDbContext context,
-            MLContext mlContext,
-            ForecastingService forecastingService)
+            MLContext mlContext)
         {
             _context = context;
             _mlContext = mlContext;
-            _forecastingService = forecastingService;
         }
 
-        public async Task<List<SalesAnomalyResultViewModel>>
-            DetectAnomaliesAsync()
+        /// Tüm ülke + şehir + ürün serilerini analiz eder
+        /// ve tespit edilen anomalileri döndürür.
+        public async Task<List<SalesAnomalyResultViewModel>> DetectAnomaliesAsync()
         {
-            // ============================================================
-            // 1. GÜNLÜK SATIŞLARI AL
-            // ============================================================
+            // Veritabanından günlük satış toplamlarını oluşturur.
+            var dailySales = await GetDailySalesAsync();
 
-            var dailySales =
-                await _context.SalesRecords
-                    .AsNoTracking()
-                    .GroupBy(x => new
-                    {
-                        x.Country,
-                        x.City,
-                        x.ProductName,
-                        SaleDate = x.OrderDate.Date
-                    })
-                    .Select(g => new DailySalesGroup
-                    {
-                        Country = g.Key.Country,
-                        City = g.Key.City,
-                        ProductName = g.Key.ProductName,
-                        OrderDate = g.Key.SaleDate,
-                        Quantity = g.Sum(x => x.Quantity)
-                    })
-                    .OrderBy(x => x.Country)
-                    .ThenBy(x => x.City)
-                    .ThenBy(x => x.ProductName)
-                    .ThenBy(x => x.OrderDate)
-                    .ToListAsync();
-
-            if (!dailySales.Any())
-            {
+            if (dailySales.Count == 0)
                 return new List<SalesAnomalyResultViewModel>();
-            }
 
-            // ============================================================
-            // 2. ÜLKE + ŞEHİR + ÜRÜN GRUPLARI
-            // ============================================================
+            var results = new List<SalesAnomalyResultViewModel>();
 
-            var groups =
-                dailySales
-                    .GroupBy(x => new
-                    {
-                        x.Country,
-                        x.City,
-                        x.ProductName
-                    })
-                    .ToList();
-
-            var results =
-                new List<SalesAnomalyResultViewModel>();
-
-            // ============================================================
-            // 3. HER SERİYİ ANALİZ ET
-            // ============================================================
+            // Her ülke + şehir + ürün kombinasyonu ayrı analiz edilir.
+            var groups = dailySales
+                .GroupBy(x => new
+                {
+                    x.Country,
+                    x.City,
+                    x.ProductName
+                })
+                .ToList();
 
             foreach (var group in groups)
             {
-                var rawSeries =
-                    group
-                        .OrderBy(x => x.OrderDate)
-                        .ToList();
+                var series = CreateCompleteSeries(group);
 
-                if (rawSeries.Count < 60)
-                {
+                // Çok kısa seriler SSA için yeterli değildir.
+                if (series.Count < MinimumSeriesLength)
                     continue;
-                }
 
-                // ========================================================
-                // TAKVİM GÜNLERİNİ TAMAMLA
-                // ========================================================
-
-                DateTime startDate =
-                    rawSeries.Min(x => x.OrderDate).Date;
-
-                DateTime endDate =
-                    rawSeries.Max(x => x.OrderDate).Date;
-
-                var salesByDate =
-                    rawSeries.ToDictionary(
-                        x => x.OrderDate.Date,
-                        x => x.Quantity);
-
-                var series =
-                    new List<DailySalesGroup>();
-
-                for (
-                    var date = startDate;
-                    date <= endDate;
-                    date = date.AddDays(1))
-                {
-                    salesByDate.TryGetValue(
-                        date,
-                        out float quantity);
-
-                    series.Add(
-                        new DailySalesGroup
-                        {
-                            Country = group.Key.Country,
-                            City = group.Key.City,
-                            ProductName = group.Key.ProductName,
-                            OrderDate = date,
-                            Quantity = quantity
-                        });
-                }
-
-                // ========================================================
-                // EN AZ 60 GÜN
-                // ========================================================
-
-                if (series.Count < 60)
-                {
+                // Gerçek satış günü sayısı yeterli değilse seri analiz edilmez.
+                if (series.Count(x => x.Quantity > 0) < MinimumSalesDays)
                     continue;
-                }
 
-                // ========================================================
-                // EN AZ 30 SATIŞ GÜNÜ
-                // ========================================================
+                var anomalies = DetectSeriesAnomalies(series);
 
-                if (series.Count(x => x.Quantity > 0) < 30)
-                {
+                if (anomalies.Count == 0)
                     continue;
-                }
 
-                // ========================================================
-                // ML.NET INPUT
-                // ========================================================
-
-                var inputs =
-                    series.Select(x =>
-                        new SalesAnomalyInput
-                        {
-                            OrderDate = x.OrderDate,
-                            Quantity = x.Quantity
-                        })
-                    .ToList();
-
-                IDataView dataView =
-                    _mlContext.Data
-                        .LoadFromEnumerable(inputs);
-
-                // ========================================================
-                // SSA
-                // ========================================================
-
-                const int trainingWindowSize = 60;
-                const int seasonalityWindowSize = 7;
-                const double confidence = 95.0;
-                const int pvalueHistoryLength = 30;
-
-                ITransformer model;
-
-                try
+                foreach (var anomaly in anomalies)
                 {
-                    var pipeline =
-                        _mlContext.Transforms.DetectSpikeBySsa(
-                            outputColumnName: "Prediction",
-                            inputColumnName:
-                                nameof(
-                                    SalesAnomalyInput.Quantity),
-                            confidence: confidence,
-                            pvalueHistoryLength:
-                                pvalueHistoryLength,
-                            trainingWindowSize:
-                                trainingWindowSize,
-                            seasonalityWindowSize:
-                                seasonalityWindowSize);
+                    var current = series[anomaly.Index];
 
-                    model = pipeline.Fit(dataView);
-                }
-                catch
-                {
-                    continue;
-                }
+                    // Beklenen satış sadece geçmiş gerçek satışlardan hesaplanır.
+                    var expected = CalculateExpectedSales(
+                        series,
+                        anomaly.Index);
 
-                // ========================================================
-                // TRANSFORM
-                // ========================================================
-
-                IDataView transformedData;
-
-                try
-                {
-                    transformedData =
-                        model.Transform(dataView);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                List<SalesAnomalyPrediction> predictions;
-
-                try
-                {
-                    predictions =
-                        _mlContext.Data
-                            .CreateEnumerable<
-                                SalesAnomalyPrediction>(
-                                transformedData,
-                                reuseRowObject: false)
-                            .ToList();
-                }
-                catch
-                {
-                    continue;
-                }
-
-                // ========================================================
-                // ANOMALİLER
-                // ========================================================
-
-                int count =
-                    Math.Min(
-                        series.Count,
-                        predictions.Count);
-
-                for (int i = 0; i < count; i++)
-                {
-                    var prediction =
-                        predictions[i];
-
-                    if (prediction.Prediction == null ||
-                        prediction.Prediction.Length < 3)
-                    {
+                    if (!expected.HasValue)
                         continue;
-                    }
 
-                    bool isAnomaly =
-                        prediction.Prediction[0] == 1;
+                    var actual = current.Quantity;
+                    var change = actual - expected.Value;
 
-                    if (!isAnomaly)
+                    var changePercentage = CalculateChangePercentage(
+                        actual,
+                        expected.Value);
+
+                    var status = GetAnomalyStatus(
+                        actual,
+                        expected.Value);
+
+                    var severity = GetSeverity(
+                        Math.Abs(changePercentage));
+
+                    results.Add(new SalesAnomalyResultViewModel
                     {
-                        continue;
-                    }
-
-                    double score =
-                        prediction.Prediction[1];
-
-                    double pValue =
-                        prediction.Prediction[2];
-
-                    // ====================================================
-                    // P VALUE
-                    // ====================================================
-
-                    if (pValue > 0.05)
-                    {
-                        continue;
-                    }
-
-                    var current =
-                        series[i];
-
-                    // ====================================================
-                    // FORECASTING
-                    // ====================================================
-
-                    float? expectedSales = null;
-
-                    try
-                    {
-                        expectedSales =
-                            await _forecastingService
-                                .GetExpectedSalesAsync(
-                                    current.City,
-                                    current.ProductName,
-                                    current.OrderDate);
-                    }
-                    catch
-                    {
-                        // Forecasting başarısızsa
-                        // anomaly tamamen kaybolmasın.
-                        expectedSales = null;
-                    }
-
-                    // ====================================================
-                    // FORECAST YOKSA
-                    // SON 7 GÜNLÜK GEÇMİŞ ORTALAMA
-                    // ====================================================
-
-                    float expected;
-
-                    if (expectedSales.HasValue)
-                    {
-                        expected =
-                            expectedSales.Value;
-                    }
-                    else
-                    {
-                        var previousValues =
-                            series
-                                .Where(x =>
-                                    x.OrderDate <
-                                    current.OrderDate &&
-                                    x.OrderDate >=
-                                    current.OrderDate.AddDays(-7))
-                                .Select(x => x.Quantity)
-                                .ToList();
-
-                        if (!previousValues.Any())
-                        {
-                            continue;
-                        }
-
-                        expected =
-                            previousValues.Average();
-                    }
-
-                    // ====================================================
-                    // GERÇEK SATIŞ
-                    // ====================================================
-
-                    float actual =
-                        current.Quantity;
-
-                    // ====================================================
-                    // FARK
-                    // ====================================================
-
-                    float change =
-                        actual - expected;
-
-                    // ====================================================
-                    // YÜZDE
-                    // ====================================================
-
-                    float changePercentage = 0;
-
-                    if (expected > 0)
-                    {
-                        changePercentage =
-                            (change / expected) * 100f;
-                    }
-
-                    // ====================================================
-                    // DURUM
-                    // ====================================================
-
-                    string status =
-                        GetAnomalyStatus(
-                            actual,
-                            expected);
-
-                    // ====================================================
-                    // SEVİYE
-                    // ====================================================
-
-                    string severity =
-                        GetSeverity(
-                            Math.Abs(changePercentage));
-
-                    // ====================================================
-                    // SONUÇ
-                    // ====================================================
-
-                    results.Add(
-                        new SalesAnomalyResultViewModel
-                        {
-                            OrderDate =
-                                current.OrderDate,
-
-                            Country =
-                                current.Country,
-
-                            City =
-                                current.City,
-
-                            ProductName =
-                                current.ProductName,
-
-                            Quantity =
-                                actual,
-
-                            ExpectedSales =
-                                expected,
-
-                            Change =
-                                change,
-
-                            ChangePercentage =
-                                changePercentage,
-
-                            Score =
-                                (float)score,
-
-                            PValue =
-                                (float)pValue,
-
-                            IsAnomaly =
-                                true,
-
-                            Status =
-                                status,
-
-                            Severity =
-                                severity
-                        });
+                        OrderDate = current.OrderDate,
+                        Country = current.Country,
+                        City = current.City,
+                        ProductName = current.ProductName,
+                        Quantity = actual,
+                        ExpectedSales = expected.Value,
+                        Change = change,
+                        ChangePercentage = changePercentage,
+                        Score = anomaly.Score,
+                        PValue = anomaly.PValue,
+                        IsAnomaly = true,
+                        Status = status,
+                        Severity = severity
+                    });
                 }
             }
 
-            // ============================================================
-            // 4. SIRALA
-            // ============================================================
-
+            // En büyük sapmalar önce gösterilir.
             return results
-                .OrderByDescending(x =>
-                    Math.Abs(x.ChangePercentage))
-                .ThenByDescending(x =>
-                    x.OrderDate)
+                .OrderByDescending(x => Math.Abs(x.ChangePercentage))
+                .ThenByDescending(x => x.OrderDate)
                 .ToList();
         }
 
-        // ================================================================
-        // ANOMALİ DURUMU
-        // ================================================================
+        /// Veritabanındaki satış kayıtlarını günlük toplam satışlara dönüştürür.
+        private async Task<List<DailySalesGroup>> GetDailySalesAsync()
+        {
+            return await _context.SalesRecords
+                .AsNoTracking()
+                .GroupBy(x => new
+                {
+                    x.Country,
+                    x.City,
+                    x.ProductName,
+                    SaleDate = x.OrderDate.Date
+                })
+                .Select(g => new DailySalesGroup
+                {
+                    Country = g.Key.Country,
+                    City = g.Key.City,
+                    ProductName = g.Key.ProductName,
+                    OrderDate = g.Key.SaleDate,
+                    Quantity = g.Sum(x => x.Quantity)
+                })
+                .OrderBy(x => x.Country)
+                .ThenBy(x => x.City)
+                .ThenBy(x => x.ProductName)
+                .ThenBy(x => x.OrderDate)
+                .ToListAsync();
+        }
 
+        /// Eksik takvim günlerini oluşturur.
+        /// Eksik günler SSA için 0 satış olarak kabul edilir.
+        /// Ancak beklenen satış hesabında bu sıfırlar kullanılmaz.
+        private static List<DailySalesGroup> CreateCompleteSeries(
+            IEnumerable<DailySalesGroup> group)
+        {
+            var rawSeries = group
+                .OrderBy(x => x.OrderDate)
+                .ToList();
+
+            if (rawSeries.Count == 0)
+                return new List<DailySalesGroup>();
+
+            var startDate = rawSeries
+                .First()
+                .OrderDate
+                .Date;
+
+            var endDate = rawSeries
+                .Last()
+                .OrderDate
+                .Date;
+
+            // Gerçek satış bulunan tarihleri hızlı erişim için dictionary'ye alır.
+            var salesByDate = rawSeries.ToDictionary(
+                x => x.OrderDate.Date,
+                x => x.Quantity);
+
+            var series = new List<DailySalesGroup>();
+
+            // Başlangıç ve bitiş arasındaki bütün takvim günlerini oluşturur.
+            for (var date = startDate;
+                 date <= endDate;
+                 date = date.AddDays(1))
+            {
+                salesByDate.TryGetValue(
+                    date,
+                    out var quantity);
+
+                series.Add(new DailySalesGroup
+                {
+                    Country = rawSeries[0].Country,
+                    City = rawSeries[0].City,
+                    ProductName = rawSeries[0].ProductName,
+                    OrderDate = date,
+                    Quantity = quantity
+                });
+            }
+
+            return series;
+        }
+
+        /// Tek bir satış serisini ML.NET SSA ile analiz eder.
+        private List<AnomalyPoint> DetectSeriesAnomalies(
+            List<DailySalesGroup> series)
+        {
+            // ML.NET'in kullanacağı input nesnelerini oluşturur.
+            var inputs = series
+                .Select(x => new SalesAnomalyInput
+                {
+                    OrderDate = x.OrderDate,
+                    Quantity = x.Quantity
+                })
+                .ToList();
+
+            var dataView = _mlContext.Data
+                .LoadFromEnumerable(inputs);
+
+            ITransformer model;
+
+            try
+            {
+                // SSA Spike Detection modeli oluşturulur.
+                var pipeline = _mlContext.Transforms.DetectSpikeBySsa(
+                    outputColumnName: "Prediction",
+                    inputColumnName: nameof(SalesAnomalyInput.Quantity),
+                    confidence: Confidence,
+                    pvalueHistoryLength: PValueHistoryLength,
+                    trainingWindowSize: TrainingWindowSize,
+                    seasonalityWindowSize: SeasonalityWindowSize);
+
+                model = pipeline.Fit(dataView);
+            }
+            catch
+            {
+                // Model oluşturulamazsa bu seri atlanır.
+                return new List<AnomalyPoint>();
+            }
+
+            IDataView transformedData;
+
+            try
+            {
+                // Eğitilen model satış serisini analiz eder.
+                transformedData = model.Transform(dataView);
+            }
+            catch
+            {
+                return new List<AnomalyPoint>();
+            }
+
+            List<SalesAnomalyPrediction> predictions;
+
+            try
+            {
+                // ML.NET çıktısını model sınıfına dönüştürür.
+                predictions = _mlContext.Data
+                    .CreateEnumerable<SalesAnomalyPrediction>(
+                        transformedData,
+                        reuseRowObject: false)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<AnomalyPoint>();
+            }
+
+            var anomalies = new List<AnomalyPoint>();
+
+            // Tahmin ve gerçek seri aynı indeks üzerinden eşleştirilir.
+            var count = Math.Min(
+                series.Count,
+                predictions.Count);
+
+            for (var i = 0; i < count; i++)
+            {
+                var prediction = predictions[i];
+
+                // ML.NET'in beklenen çıktı formatı kontrol edilir.
+                if (prediction.Prediction == null ||
+                    prediction.Prediction.Length < 3)
+                {
+                    continue;
+                }
+
+                var isAnomaly =
+                    prediction.Prediction[0] == 1;
+
+                // Normal günler sonuç listesine eklenmez.
+                if (!isAnomaly)
+                    continue;
+
+                var score =
+                    prediction.Prediction[1];
+
+                var pValue =
+                    prediction.Prediction[2];
+
+                // İstatistiksel olarak yeterince anlamlı olmayan
+                // anomaliler sonuçtan çıkarılır.
+                if (pValue > 0.05)
+                    continue;
+
+                anomalies.Add(new AnomalyPoint
+                {
+                    Index = i,
+                    Score = (float)score,
+                    PValue = (float)pValue
+                });
+            }
+
+            return anomalies;
+        }
+
+        /// Anomali günü için beklenen satışı hesaplar.
+        /// Sıfır satış günleri ortalamaya dahil edilmez.
+        /// Önce aynı haftanın günleri, sonra daha geniş geçmiş kullanılır.
+        private static float? CalculateExpectedSales(
+            List<DailySalesGroup> series,
+            int currentIndex)
+        {
+            if (currentIndex <= 0)
+                return null;
+
+            var currentDate =
+                series[currentIndex].OrderDate;
+
+            // Öncelikle önceki aynı haftanın günlerindeki satışlar alınır.
+            var sameWeekdaySales = series
+                .Take(currentIndex)
+                .Where(x =>
+                    x.Quantity > 0 &&
+                    x.OrderDate.DayOfWeek ==
+                    currentDate.DayOfWeek)
+                .OrderByDescending(x => x.OrderDate)
+                .Take(8)
+                .Select(x => x.Quantity)
+                .ToList();
+
+            if (sameWeekdaySales.Count >= 2)
+                return CalculateMedian(sameWeekdaySales);
+
+            // Aynı haftanın günü yeterli değilse son 14 gün kullanılır.
+            var last14Days = series
+                .Take(currentIndex)
+                .Where(x =>
+                    x.Quantity > 0 &&
+                    x.OrderDate >= currentDate.AddDays(-14))
+                .Select(x => x.Quantity)
+                .ToList();
+
+            if (last14Days.Count >= 3)
+                return CalculateMedian(last14Days);
+
+            // Son 30 gün daha geniş bir fallback olarak kullanılır.
+            var last30Days = series
+                .Take(currentIndex)
+                .Where(x =>
+                    x.Quantity > 0 &&
+                    x.OrderDate >= currentDate.AddDays(-30))
+                .Select(x => x.Quantity)
+                .ToList();
+
+            if (last30Days.Count >= 3)
+                return CalculateMedian(last30Days);
+
+            return null;
+        }
+
+        /// Verilen satış değerlerinin median değerini hesaplar.
+        /// Median, aşırı yüksek satışların beklenen değeri bozmasını engeller.
+        private static float CalculateMedian(
+            List<float> values)
+        {
+            if (values.Count == 0)
+                return 0;
+
+            var orderedValues = values
+                .OrderBy(x => x)
+                .ToList();
+
+            var middle = orderedValues.Count / 2;
+
+            if (orderedValues.Count % 2 == 1)
+                return orderedValues[middle];
+
+            return (
+                orderedValues[middle - 1] +
+                orderedValues[middle]
+            ) / 2f;
+        }
+
+        /// Gerçek satış ile beklenen satış arasındaki yüzde farkı hesaplar.
+        private static float CalculateChangePercentage(
+            float actual,
+            float expected)
+        {
+            if (expected <= 0)
+                return actual > 0 ? 100f : 0f;
+
+            return ((actual - expected) / expected) * 100f;
+        }
+
+        /// Anomalinin satış sıçraması mı yoksa düşüş mü olduğunu belirler.
         private static string GetAnomalyStatus(
             float actual,
             float expected)
@@ -451,61 +413,46 @@ namespace ECommerceSalesIntelligence.Services
             }
 
             if (actual > expected)
-            {
                 return "SIÇRAMA";
-            }
 
             if (actual < expected)
-            {
                 return "DÜŞÜŞ";
-            }
 
             return "ANOMALİ";
         }
 
-        // ================================================================
-        // ŞİDDET
-        // ================================================================
-
+        /// Anomalinin şiddetini yüzde sapmaya göre belirler.
         private static string GetSeverity(
             float percentage)
         {
             if (percentage >= 100)
-            {
                 return "KRİTİK";
-            }
 
             if (percentage >= 50)
-            {
                 return "YÜKSEK";
-            }
 
             if (percentage >= 25)
-            {
                 return "ORTA";
-            }
 
             return "DÜŞÜK";
         }
 
-        // ================================================================
-        // INTERNAL MODEL
-        // ================================================================
-
+        /// Günlük satışları temsil eden dahili modeldir.
         private class DailySalesGroup
         {
-            public string Country { get; set; }
-                = string.Empty;
-
-            public string City { get; set; }
-                = string.Empty;
-
-            public string ProductName { get; set; }
-                = string.Empty;
-
+            public string Country { get; set; } = string.Empty;
+            public string City { get; set; } = string.Empty;
+            public string ProductName { get; set; } = string.Empty;
             public DateTime OrderDate { get; set; }
-
             public float Quantity { get; set; }
+        }
+
+        /// ML.NET tarafından tespit edilen tek bir anomaly noktasını tutar.
+        private class AnomalyPoint
+        {
+            public int Index { get; set; }
+            public float Score { get; set; }
+            public float PValue { get; set; }
         }
     }
 }
