@@ -16,7 +16,7 @@
                         </div>
                         <div>
                             <h2 class="text-lg font-bold text-[#0b1f3a]">Tahminleme</h2>
-                            <p class="text-xs text-[#59708f] mt-1">Satış tahmini oluştur</p>
+                            <p class="text-xs text-[#59708f] mt-1">SSA ile günlük satış tahmini</p>
                         </div>
                     </div>
                 </div>
@@ -36,21 +36,23 @@
                         <div class="flex items-start gap-3">
                             <span class="material-symbols-outlined text-[#0f5fd7] text-[20px]">info</span>
                             <div>
-                                <p class="text-sm font-semibold text-[#193354]">Otomatik tahmin</p>
-                                <p class="text-xs text-[#617693] leading-5 mt-1">Sistem seçtiğiniz şehir için geçmiş verilerle birlikte gelecek <strong>7 günlük</strong> satış tahmini oluşturur.</p>
+                                <p class="text-sm font-semibold text-[#193354]">SSA Forecasting</p>
+                                <p class="text-xs text-[#617693] leading-5 mt-1">
+                                    Seçilen şehrin geçmiş <strong>günlük toplam satışları</strong> kullanılarak gelecek <strong>7 gün</strong> tahmin edilir.
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <button id="forecastButton" type="button" onclick="fetchForecastData()" class="w-full h-12 rounded-xl bg-[#8b1748] hover:bg-[#74143d] text-white font-bold text-sm flex items-center justify-center gap-2 transition shadow-sm">
                         <span class="material-symbols-outlined text-[19px]">trending_up</span>
-                        Tahmin Et
+                        <span id="forecastButtonText">Tahmin Et</span>
                     </button>
                 </div>
             </div>
         </aside>
 
-        <!-- SAĞ ANA ALAN -->
+        <!-- ANA ALAN -->
         <main class="col-span-12 lg:col-span-9 flex flex-col gap-6">
 
             <!-- SSA PARAMETRELERİ -->
@@ -67,29 +69,60 @@
 
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div class="rounded-xl bg-[#f3f6fc] border border-[#e0e7f3] px-4 py-4 text-center">
-                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Pencere Boyutu</span>
-                        <span id="param-windowSize" class="block mt-2 text-xl font-bold text-[#172b4d]">-</span>
+                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Window Size</span>
+                        <span id="param-windowSize" class="block mt-2 text-xl font-bold text-[#172b4d]">30</span>
                     </div>
+
                     <div class="rounded-xl bg-[#f3f6fc] border border-[#e0e7f3] px-4 py-4 text-center">
-                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Seri Uzunluğu</span>
-                        <span id="param-seriesLength" class="block mt-2 text-xl font-bold text-[#172b4d]">-</span>
+                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Series Length</span>
+                        <span id="param-seriesLength" class="block mt-2 text-xl font-bold text-[#172b4d]">90</span>
                     </div>
+
                     <div class="rounded-xl bg-[#f3f6fc] border border-[#e0e7f3] px-4 py-4 text-center">
-                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Eğitim Boyutu</span>
+                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Train Size</span>
                         <span id="param-trainSize" class="block mt-2 text-xl font-bold text-[#172b4d]">-</span>
                     </div>
+
                     <div class="rounded-xl bg-[#f3f6fc] border border-[#e0e7f3] px-4 py-4 text-center">
-                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Ufuk (Gün)</span>
-                        <span id="param-horizon" class="block mt-2 text-xl font-bold text-[#172b4d]">-</span>
+                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Horizon</span>
+                        <span id="param-horizon" class="block mt-2 text-xl font-bold text-[#172b4d]">7</span>
                     </div>
+
                     <div class="rounded-xl bg-[#f3f6fc] border border-[#e0e7f3] px-4 py-4 text-center">
-                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Güven Düzeyi</span>
-                        <span id="param-confidenceLevel" class="block mt-2 text-xl font-bold text-[#172b4d]">-</span>
+                        <span class="block text-[11px] uppercase tracking-wide font-semibold text-[#7385a0]">Confidence</span>
+                        <span id="param-confidenceLevel" class="block mt-2 text-xl font-bold text-[#172b4d]">95%</span>
+                    </div>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-[#f8faff] border border-[#e0e7f3] p-4">
+                        <p class="text-xs font-bold text-[#172b4d]">Window Size</p>
+                        <p class="text-[11px] leading-5 text-[#71849f] mt-1">SSA modelinin geçmiş satış serisindeki örüntüleri incelemek için kullandığı pencere uzunluğudur.</p>
+                    </div>
+
+                    <div class="rounded-xl bg-[#f8faff] border border-[#e0e7f3] p-4">
+                        <p class="text-xs font-bold text-[#172b4d]">Series Length</p>
+                        <p class="text-[11px] leading-5 text-[#71849f] mt-1">SSA modelinin tahmin üretirken değerlendirdiği geçmiş zaman serisi uzunluğudur.</p>
+                    </div>
+
+                    <div class="rounded-xl bg-[#f8faff] border border-[#e0e7f3] p-4">
+                        <p class="text-xs font-bold text-[#172b4d]">Train Size</p>
+                        <p class="text-[11px] leading-5 text-[#71849f] mt-1">Modelin eğitim sırasında kullandığı toplam günlük gözlem sayısını belirtir.</p>
+                    </div>
+
+                    <div class="rounded-xl bg-[#f8faff] border border-[#e0e7f3] p-4">
+                        <p class="text-xs font-bold text-[#172b4d]">Horizon</p>
+                        <p class="text-[11px] leading-5 text-[#71849f] mt-1">Modelin gelecekte kaç gün için tahmin üreteceğini belirtir.</p>
+                    </div>
+
+                    <div class="rounded-xl bg-[#f8faff] border border-[#e0e7f3] p-4 md:col-span-2">
+                        <p class="text-xs font-bold text-[#172b4d]">Confidence Level</p>
+                        <p class="text-[11px] leading-5 text-[#71849f] mt-1">Tahminlerin güven aralığını belirler. Bu projede <strong>%95</strong> güven seviyesi kullanılmaktadır.</p>
                     </div>
                 </div>
             </section>
 
-            <!-- SONUÇ / GRAFİK ALANI -->
+            <!-- GRAFİK -->
             <section class="bg-white rounded-2xl shadow-sm border border-[#dbe4f5] overflow-hidden">
                 <div class="px-6 py-3 border-b border-[#e1e7f1]">
                     <div class="flex items-center justify-between gap-4">
@@ -102,38 +135,41 @@
                                 <p id="chartSubTitle" class="text-[11px] text-[#6a7c96]">Şehir seçerek tahmin oluşturabilirsiniz.</p>
                             </div>
                         </div>
-                        <div id="statusBadge" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[#f2f5fa] text-[11px] font-semibold text-[#677a95]">
-                            <span class="w-2 h-2 rounded-full bg-[#94a3b8]"></span> Bekleniyor
+
+                        <div id="statusBadge" class="hidden items-center gap-2 px-3 py-1 rounded-full bg-[#f2f5fa] text-[11px] font-semibold text-[#677a95]">
+                            <span class="w-2 h-2 rounded-full bg-[#94a3b8]"></span>
+                            Bekleniyor
                         </div>
                     </div>
                 </div>
 
                 <div class="px-6 py-3">
-                    <div id="chartContainer" class="relative h-[180px] rounded-xl border border-[#d9e3f2] bg-[#f8faff] flex items-center justify-center p-3">
-                        <div id="chartPlaceholder" class="text-center px-4">
-                            <div class="w-9 h-9 rounded-xl bg-[#eaf1ff] flex items-center justify-center mx-auto mb-1.5">
-                                <span class="material-symbols-outlined text-[#0f5fd7] text-[20px]">query_stats</span>
+                    <div id="chartContainer" class="relative h-[320px] rounded-xl border border-[#d9e3f2] bg-[#f8faff] p-3">
+                        <div id="chartPlaceholder" class="absolute inset-0 flex items-center justify-center text-center px-4">
+                            <div>
+                                <div class="w-9 h-9 rounded-xl bg-[#eaf1ff] flex items-center justify-center mx-auto mb-2">
+                                    <span class="material-symbols-outlined text-[#0f5fd7] text-[20px]">query_stats</span>
+                                </div>
+                                <h3 id="chartStatusTitle" class="text-xs font-bold text-[#243b5a]">Tahmin bekleniyor</h3>
+                                <p id="chartStatusText" class="text-[11px] text-[#70839d] mt-1">Şehir seçip "Tahmin Et" butonuna bastığınızda model çalıştırılacaktır.</p>
                             </div>
-                            <h3 id="chartStatusTitle" class="text-xs font-bold text-[#243b5a]">Tahmin bekleniyor</h3>
-                            <p id="chartStatusText" class="text-[11px] text-[#70839d] mt-0.5">Şehir seçip "Tahmin Et" butonuna bastığınızda model çalıştırılacaktır.</p>
                         </div>
-                        <canvas id="forecastChart" class="hidden"></canvas>
+
+                        <canvas id="forecastChart" class="hidden w-full h-full"></canvas>
                     </div>
                 </div>
             </section>
 
-            <!-- TAHMİN TABLOSU (SADECE 7 GÜNLÜK TAHMİNLER) -->
+            <!-- TAHMİN TABLOSU -->
             <section class="bg-white rounded-2xl shadow-sm border border-[#dbe4f5] overflow-hidden">
                 <div class="px-6 py-4 bg-[#e8eefb] border-b border-[#d6e0f0]">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-                                <span class="material-symbols-outlined text-[#0f5fd7] text-[18px]">calendar_month</span>
-                            </div>
-                            <div>
-                                <h3 id="tableTitle" class="text-sm font-bold text-[#172b4d]">7 GÜNLÜK TAHMİN DETAYI</h3>
-                                <p class="text-[11px] text-[#6e819d] mt-0.5">Gelecek dönem tahmin sonuçları ve sınır değerleri</p>
-                            </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[#0f5fd7] text-[18px]">calendar_month</span>
+                        </div>
+                        <div>
+                            <h3 id="tableTitle" class="text-sm font-bold text-[#172b4d]">GELECEK 7 GÜNLÜK TAHMİN</h3>
+                            <p class="text-[11px] text-[#6e819d] mt-0.5">Tarih, tahmini satış ve %95 güven aralığı</p>
                         </div>
                     </div>
                 </div>
@@ -144,11 +180,12 @@
                             <tr class="bg-[#f8faff] border-b border-[#dfe7f3]">
                                 <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Tarih</th>
                                 <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Veri Türü</th>
-                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Tahmin</th>
-                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Alt Sınır</th>
-                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Üst Sınır</th>
+                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Tahmini Satış</th>
+                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Alt Güven Sınırı</th>
+                                <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-[#61738e]">Üst Güven Sınırı</th>
                             </tr>
                         </thead>
+
                         <tbody id="forecastTableBody" class="divide-y divide-[#e8edf5]">
                             <tr>
                                 <td colspan="5" class="px-6 py-8 text-center">
@@ -162,6 +199,26 @@
                     </table>
                 </div>
             </section>
+
+            <!-- CASE ÇIKTISI -->
+            <section class="bg-white rounded-2xl shadow-sm border border-[#dbe4f5] p-5">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#fce8f1] text-[#8b1748] flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined">task_alt</span>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-[#172b4d]">Görev 1 — Forecasting</h3>
+                        <p class="text-xs text-[#71849f] mt-2 leading-5">
+                            ML.NET SSA kullanılarak seçilen şehir için geçmiş günlük toplam satışlardan
+                            <strong>önümüzdeki 7 gün</strong> tahmin edilmektedir.
+                            Grafik üzerinde <strong>son 30 günlük gerçek satış</strong> ile
+                            <strong>gelecek 7 günlük tahmin</strong> birlikte gösterilmektedir.
+                            Her tahmin için <strong>alt ve üst güven sınırı</strong> hesaplanmaktadır.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 </div>
@@ -172,19 +229,40 @@
         let salesChart = null;
 
         document.addEventListener("DOMContentLoaded", async function () {
-            const citySelect = document.getElementById("citySelect");
-            try {
-                const response = await fetch("/api/SalesIntelligence/cities");
-                if (!response.ok) throw new Error("Şehirler yüklenemedi.");
-                const cities = await response.json();
+            await loadCities();
+        });
 
-                citySelect.innerHTML = "";
-                if (!cities || cities.length === 0) {
+        async function loadCities() {
+            const citySelect = document.getElementById("citySelect");
+            citySelect.disabled = true;
+
+            try {
+                const response = await fetch("/api/SalesIntelligence/cities", {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+
+                const responseText = await response.text();
+
+                if (!response.ok) {
+                    let message = "Şehirler yüklenemedi.";
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        message = errorData.message || errorData.error || message;
+                    } catch {}
+                    throw new Error(message);
+                }
+
+                const cities = JSON.parse(responseText);
+
+                citySelect.innerHTML = `<option value="">Şehir seçiniz</option>`;
+
+                if (!Array.isArray(cities) || cities.length === 0) {
                     citySelect.innerHTML = `<option value="">Kayıtlı şehir bulunamadı</option>`;
                     return;
                 }
 
-                cities.forEach(city => {
+                cities.forEach(function (city) {
                     const option = document.createElement("option");
                     option.value = city;
                     option.textContent = city;
@@ -193,12 +271,16 @@
             } catch (error) {
                 console.error("ŞEHİR HATASI:", error);
                 citySelect.innerHTML = `<option value="">Şehirler yüklenemedi</option>`;
+                showStatus("error", "Şehirler yüklenemedi", error.message);
+            } finally {
+                citySelect.disabled = false;
             }
-        });
+        }
 
         async function fetchForecastData() {
             const citySelect = document.getElementById("citySelect");
             const button = document.getElementById("forecastButton");
+            const buttonText = document.getElementById("forecastButtonText");
             const city = citySelect.value;
             const horizon = 7;
             const confidenceLevel = 0.95;
@@ -208,24 +290,27 @@
                 return;
             }
 
-            const statusText = document.getElementById("chartStatusText");
-            const statusTitle = document.getElementById("chartStatusTitle");
+            const statusBadge = document.getElementById("statusBadge");
             const chartTitle = document.getElementById("chartTitle");
             const chartSubTitle = document.getElementById("chartSubTitle");
+            const statusTitle = document.getElementById("chartStatusTitle");
+            const statusText = document.getElementById("chartStatusText");
             const tbody = document.getElementById("forecastTableBody");
-            const tableTitle = document.getElementById("tableTitle");
-            const statusBadge = document.getElementById("statusBadge");
             const chartPlaceholder = document.getElementById("chartPlaceholder");
             const forecastCanvas = document.getElementById("forecastChart");
 
             button.disabled = true;
             button.classList.add("opacity-70", "cursor-not-allowed");
+            buttonText.innerText = "Hesaplanıyor...";
+
             statusBadge.classList.remove("hidden");
+            statusBadge.classList.add("flex");
             statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Hesaplanıyor`;
-            chartTitle.innerText = `${city.toUpperCase()} — Satış Tahmini`;
+
+            chartTitle.innerText = `${city.toUpperCase()} — SSA Satış Tahmini`;
             chartSubTitle.innerText = "SSA modeli çalıştırılıyor...";
             statusTitle.innerText = "Tahmin hesaplanıyor";
-            statusText.innerText = `${city} için geçmiş veriler ve gelecek tahminler hazırlanıyor...`;
+            statusText.innerText = `${city} için geçmiş günlük satışlar analiz ediliyor...`;
 
             chartPlaceholder.classList.remove("hidden");
             forecastCanvas.classList.add("hidden");
@@ -235,162 +320,232 @@
                     <td colspan="5" class="px-6 py-10 text-center">
                         <div class="flex flex-col items-center">
                             <span class="material-symbols-outlined animate-spin text-[#0f5fd7] text-[28px]">progress_activity</span>
-                            <span class="mt-3 text-sm text-[#70839d]">Model çalıştırılıyor...</span>
+                            <span class="mt-3 text-sm text-[#70839d]">SSA modeli çalıştırılıyor...</span>
                         </div>
                     </td>
-                </tr>
-            `;
+                </tr>`;
 
             try {
-                const url = `/api/SalesIntelligence/forecast?city=${encodeURIComponent(city)}&horizon=${horizon}&confidenceLevel=${confidenceLevel}`;
-                const response = await fetch(url);
+                const url = "/api/SalesIntelligence/forecast" +
+                    "?city=" + encodeURIComponent(city) +
+                    "&horizon=" + horizon +
+                    "&confidenceLevel=" + confidenceLevel;
+
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+
                 const responseText = await response.text();
 
                 if (!response.ok) {
                     let errorMessage = "Tahmin verisi alınamadı.";
+
                     try {
                         const errorData = JSON.parse(responseText);
                         errorMessage = errorData.error || errorData.message || errorMessage;
+
+                        if (errorData.innerError) {
+                            errorMessage += " | " + errorData.innerError;
+                        }
                     } catch {
                         if (responseText) errorMessage = responseText;
                     }
+
                     throw new Error(errorMessage);
                 }
 
                 const result = JSON.parse(responseText);
 
-                document.getElementById("param-windowSize").innerText = result.windowSize ?? "-";
-                document.getElementById("param-seriesLength").innerText = result.seriesLength ?? "-";
-                document.getElementById("param-trainSize").innerText = result.trainSize ?? "-";
-                document.getElementById("param-horizon").innerText = result.horizon ?? 7;
-                document.getElementById("param-confidenceLevel").innerText = result.confidenceLevel != null ? `${(result.confidenceLevel * 100).toFixed(0)}%` : "95%";
+                if (!result) {
+                    throw new Error("API boş sonuç döndürdü.");
+                }
 
-                chartTitle.innerText = `${city.toUpperCase()} — Satış Tahmin Sonuçları`;
-                chartSubTitle.innerText = "Geçmiş veriler ve SSA modeli ile 7 günlük tahmin";
+                document.getElementById("param-windowSize").innerText = result.windowSize ?? 14;
+                document.getElementById("param-seriesLength").innerText = result.seriesLength ?? 90;
+                document.getElementById("param-trainSize").innerText = result.trainSize ?? "-";
+                document.getElementById("param-horizon").innerText = result.horizon ?? horizon;
+                document.getElementById("param-confidenceLevel").innerText =
+                    result.confidenceLevel != null
+                        ? `${(Number(result.confidenceLevel) * 100).toFixed(0)}%`
+                        : "95%";
+
+                const historical = Array.isArray(result.historicalDetails)
+                    ? result.historicalDetails
+                    : [];
+
+                const details = Array.isArray(result.details)
+                    ? result.details
+                    : [];
+
+                if (historical.length === 0 && details.length === 0) {
+                    throw new Error("API tahmin veya geçmiş satış verisi döndürmedi.");
+                }
+
+                chartTitle.innerText = `${city.toUpperCase()} — SSA Satış Tahmini`;
+                chartSubTitle.innerText = "Son 30 günlük gerçek satış + gelecek 7 günlük tahmin";
                 statusTitle.innerText = "Tahmin başarıyla oluşturuldu";
-                statusText.innerText = `${city} için satış analizi hazır.`;
+                statusText.innerText = `${city} için ${details.length} günlük satış tahmini hazır.`;
 
                 statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Başarılı`;
 
+                const allDates = [];
+                const historicalSales = [];
+                const predictedSales = [];
+                const upperBounds = [];
+                const lowerBounds = [];
+
+                historical.forEach(function (item) {
+                    allDates.push(item.date);
+                    historicalSales.push(Number(item.actualSales));
+                    predictedSales.push(null);
+                    upperBounds.push(null);
+                    lowerBounds.push(null);
+                });
+
                 tbody.innerHTML = "";
 
-                const historical = result.historicalDetails || [];
-                const details = result.details || [];
+                details.forEach(function (item) {
+                    allDates.push(item.date);
+                    historicalSales.push(null);
+                    predictedSales.push(Number(item.predictedSales));
+                    upperBounds.push(Number(item.upperBound));
+                    lowerBounds.push(Number(item.lowerBound));
 
-                tableTitle.innerText = "7 GÜNLÜK TAHMİN DETAYI";
+                    const row = document.createElement("tr");
+                    row.className = "hover:bg-[#f8faff] transition-colors";
 
-                let allDates = [];
-                let historicalSales = [];
-                let predictedSales = [];
-                let upperBounds = [];
-                let lowerBounds = [];
+                    row.innerHTML = `
+                        <td class="px-6 py-4 text-sm font-semibold text-[#263b58]">${escapeHtml(item.date)}</td>
+                        <td class="px-6 py-4 text-xs font-medium text-[#8b1748]">
+                            <span class="px-2 py-1 rounded bg-[#fce8f1] text-[#8b1748]">Tahmin</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-lg bg-[#fce8f1] text-[#8b1748] font-bold text-sm">${formatNumber(item.predictedSales)}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm text-[#657893]">${formatNumber(item.lowerBound)}</td>
+                        <td class="px-6 py-4 text-right text-sm text-[#657893]">${formatNumber(item.upperBound)}</td>`;
 
-                // Grafik çizimi için geçmiş verileri arka planda diziye atıyoruz
-                if (historical.length > 0) {
-                    historical.forEach(item => {
-                        allDates.push(item.date);
-                        historicalSales.push(item.actualSales);
-                        predictedSales.push(null);
-                        upperBounds.push(null);
-                        lowerBounds.push(null);
-                    });
-                }
+                    tbody.appendChild(row);
+                });
 
-                // Sadece 7 günlük tahmin verilerini tabloya basıyoruz
-                if (details.length > 0) {
-                    details.forEach(item => {
-                        allDates.push(item.date);
-                        historicalSales.push(null);
-                        predictedSales.push(item.predictedSales);
-
-                        const lowerVal = item.lowerBound != null ? Math.max(0, item.lowerBound) : "-";
-                        const upperVal = item.upperBound ?? "-";
-                        upperBounds.push(upperVal);
-                        lowerBounds.push(lowerVal);
-
-                        const row = document.createElement("tr");
-                        row.className = "hover:bg-[#f8faff] transition-colors";
-                        row.innerHTML = `
-                            <td class="px-6 py-4 text-sm font-semibold text-[#263b58]">${item.date}</td>
-                            <td class="px-6 py-4 text-xs font-medium text-[#8b1748]"><span class="px-2 py-0.5 rounded bg-[#fce8f1] text-[#8b1748]">Tahmin</span></td>
-                            <td class="px-6 py-4 text-right">
-                                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-[#fce8f1] text-[#8b1748] font-bold text-sm">${item.predictedSales}</span>
-                            </td>
-                            <td class="px-6 py-4 text-right text-sm text-[#657893]">${lowerVal}</td>
-                            <td class="px-6 py-4 text-right text-sm text-[#657893]">${upperVal}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-
+                if (allDates.length > 0) {
                     chartPlaceholder.classList.add("hidden");
                     forecastCanvas.classList.remove("hidden");
 
                     if (salesChart) {
                         salesChart.destroy();
+                        salesChart = null;
                     }
 
                     const ctx = forecastCanvas.getContext("2d");
+
                     salesChart = new Chart(ctx, {
-                        type: 'line',
+                        type: "line",
                         data: {
                             labels: allDates,
                             datasets: [
                                 {
-                                    label: 'Gerçekleşen Satış',
+                                    label: "Gerçekleşen Satış",
                                     data: historicalSales,
-                                    borderColor: '#64748b',
-                                    backgroundColor: '#64748b',
+                                    borderColor: "#64748b",
+                                    backgroundColor: "#64748b",
                                     tension: 0.3,
-                                    borderWidth: 2
+                                    borderWidth: 2,
+                                    pointRadius: 2,
+                                    spanGaps: false
                                 },
                                 {
-                                    label: 'Tahmini Satış',
+                                    label: "7 Günlük Tahmin",
                                     data: predictedSales,
-                                    borderColor: '#8b1748',
-                                    backgroundColor: '#8b1748',
+                                    borderColor: "#8b1748",
+                                    backgroundColor: "#8b1748",
                                     tension: 0.3,
-                                    borderWidth: 3
+                                    borderWidth: 3,
+                                    pointRadius: 3,
+                                    spanGaps: false
                                 },
                                 {
-                                    label: 'Üst Sınır',
+                                    label: "Üst Güven Sınırı",
                                     data: upperBounds,
-                                    borderColor: '#cbd5e1',
-                                    borderDash: [5, 5],
+                                    borderColor: "#94a3b8",
+                                    borderDash: [6, 6],
                                     fill: false,
-                                    tension: 0.3
+                                    tension: 0.3,
+                                    borderWidth: 1.5,
+                                    pointRadius: 0,
+                                    spanGaps: false
                                 },
                                 {
-                                    label: 'Alt Sınır',
+                                    label: "Alt Güven Sınırı",
                                     data: lowerBounds,
-                                    borderColor: '#cbd5e1',
-                                    borderDash: [5, 5],
+                                    borderColor: "#94a3b8",
+                                    borderDash: [6, 6],
                                     fill: false,
-                                    tension: 0.3
+                                    tension: 0.3,
+                                    borderWidth: 1.5,
+                                    pointRadius: 0,
+                                    spanGaps: false
                                 }
                             ]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            interaction: { mode: "index", intersect: false },
                             plugins: {
-                                legend: { position: 'bottom' }
+                                legend: {
+                                    position: "bottom",
+                                    labels: {
+                                        font: { size: 11 },
+                                        usePointStyle: true,
+                                        padding: 15
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (context) {
+                                            if (context.raw === null || context.raw === undefined) return null;
+                                            return `${context.dataset.label}: ${formatNumber(context.raw)}`;
+                                        }
+                                    }
+                                }
                             },
                             scales: {
-                                y: { beginAtZero: false }
+                                x: {
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 0,
+                                        autoSkip: true,
+                                        maxTicksLimit: 15
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function (value) {
+                                            return formatNumber(value);
+                                        }
+                                    }
+                                }
                             }
                         }
                     });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[#7a8da8]">Tahmin verisi bulunamadı.</td></tr>`;
                 }
             } catch (error) {
                 console.error("FORECAST HATASI:", error);
+
                 statusBadge.classList.remove("hidden");
+                statusBadge.classList.add("flex");
                 statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Hata`;
+
                 chartTitle.innerText = `${city.toUpperCase()} — Tahmin Hatası`;
-                chartSubTitle.innerText = "Model çalıştırılırken bir hata meydana geldi.";
+                chartSubTitle.innerText = "Model çalıştırılırken hata meydana geldi.";
                 statusTitle.innerText = "Tahmin oluşturulamadı";
                 statusText.innerText = error.message;
+
+                chartPlaceholder.classList.remove("hidden");
+                forecastCanvas.classList.add("hidden");
 
                 tbody.innerHTML = `
                     <tr>
@@ -398,15 +553,47 @@
                             <div class="flex flex-col items-center">
                                 <span class="material-symbols-outlined text-red-500 text-[30px]">error</span>
                                 <span class="mt-3 text-sm font-semibold text-red-600">Tahmin oluşturulurken hata oluştu.</span>
-                                <span class="mt-2 text-xs text-[#7b8ca4] max-w-xl">${error.message}</span>
+                                <span class="mt-2 text-xs text-[#7b8ca4] max-w-xl break-words">${escapeHtml(error.message)}</span>
                             </div>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             } finally {
                 button.disabled = false;
                 button.classList.remove("opacity-70", "cursor-not-allowed");
+                buttonText.innerText = "Tahmin Et";
             }
+        }
+
+        function formatNumber(value) {
+            const number = Number(value);
+            if (Number.isNaN(number) || !Number.isFinite(number)) return "0";
+            return number.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+        }
+
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return "";
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showStatus(type, title, message) {
+            const statusBadge = document.getElementById("statusBadge");
+            const statusTitle = document.getElementById("chartStatusTitle");
+            const statusText = document.getElementById("chartStatusText");
+
+            statusBadge.classList.remove("hidden");
+            statusBadge.classList.add("flex");
+
+            statusBadge.innerHTML = type === "error"
+                ? `<span class="w-2 h-2 rounded-full bg-red-500"></span> Hata`
+                : `<span class="w-2 h-2 rounded-full bg-green-500"></span> Başarılı`;
+
+            statusTitle.innerText = title;
+            statusText.innerText = message;
         }
     </script>
 }

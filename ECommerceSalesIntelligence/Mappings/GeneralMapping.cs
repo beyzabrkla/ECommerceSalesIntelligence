@@ -19,7 +19,7 @@ namespace ECommerceSalesIntelligence.Mappings
                 .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductName))
                 .ForMember(dest => dest.TargetMonth, opt => opt.MapFrom(src => src.OrderDate.ToString("yyyy-MM")))
-                .ForMember(dest => dest.LastMonth, opt => opt.MapFrom(src => (float)src.Quantity))
+                .ForMember(dest => dest.LastMonthSales, opt => opt.MapFrom(src => (float)src.Quantity))
                 .ForMember(dest => dest.Label, opt => opt.Ignore()); // Label kod içinde hesaplanacak
 
             // Classification Input -> Prediction eşlemesi

@@ -4,19 +4,51 @@ namespace ECommerceSalesIntelligence.Models.Classification
 {
     public class SalesClassificationPrediction
     {
+        // ============================================================
+        // ŞEHİR
+        // ============================================================
+
+        public string City { get; set; } = "";
+
+        // ============================================================
+        // ÜRÜN
+        // ============================================================
+
+        public string ProductName { get; set; } = "";
+
+        // ============================================================
+        // GEÇMİŞ SATIŞLAR
+        // ============================================================
+
+        public float LastThreeMonthsSales { get; set; }
+
+        public float LastMonthSales { get; set; }
+
+        public float ThreeMonthAverage { get; set; }
+
+        // ============================================================
+        // TAHMİN
+        // ============================================================
+
         [ColumnName("PredictedLabel")]
         public bool PredictedLabel { get; set; }
 
-        [ColumnName("Probability")]
+        // ============================================================
+        // PROBABILITY
+        // ============================================================
+
         public float Probability { get; set; }
 
-        [ColumnName("Score")]
+        // ============================================================
+        // SCORE
+        // ============================================================
+
         public float Score { get; set; }
 
-        public string City { get; set; }
-        public float ThreeMonthsAgo { get; set; }
-        public float TwoMonthsAgo { get; set; }
-        public float LastMonth { get; set; }
-        public float ThreeMonthAverage { get; set; }
+        // ============================================================
+        // HEDEF AY
+        // ============================================================
+
+        public string TargetMonth { get; set; } = "";
     }
 }

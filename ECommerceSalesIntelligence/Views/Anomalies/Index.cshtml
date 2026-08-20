@@ -1,243 +1,956 @@
-﻿@{
+﻿@model List<ECommerceSalesIntelligence.Models.SalesAnomalyResultViewModel>
+
+@{
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var results = Model ?? new List<ECommerceSalesIntelligence.Models.SalesAnomalyResultViewModel>();
+
+    var anomalyCount = results.Count;
+    var latestDate = results
+        .OrderByDescending(x => x.OrderDate)
+        .FirstOrDefault()?.OrderDate;
+
+    var spikeCount = results.Count(x => x.Status == "SIÇRAMA");
+    var dropCount = results.Count(x => x.Status == "DÜŞÜŞ");
+
+    var criticalCount = results.Count(x => x.Severity == "KRİTİK");
+    var highCount = results.Count(x => x.Severity == "YÜKSEK");
+
+    string StatusClass(string status) => status switch
+    {
+        "SIÇRAMA" =>
+            "bg-rose-500/10 text-rose-700 border-rose-500/20",
+
+        "DÜŞÜŞ" =>
+            "bg-orange-500/10 text-orange-700 border-orange-500/20",
+
+        _ =>
+            "bg-surface-container text-on-surface-variant border-outline-variant/20"
+    };
+
+    string StatusIcon(string status) => status switch
+    {
+        "SIÇRAMA" => "trending_up",
+        "DÜŞÜŞ" => "trending_down",
+        _ => "warning"
+    };
+
+    string SeverityClass(string severity) => severity switch
+    {
+        "KRİTİK" =>
+            "bg-red-500/10 text-red-700 border-red-500/20",
+
+        "YÜKSEK" =>
+            "bg-orange-500/10 text-orange-700 border-orange-500/20",
+
+        "ORTA" =>
+            "bg-amber-500/10 text-amber-700 border-amber-500/20",
+
+        "DÜŞÜK" =>
+            "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+
+        _ =>
+            "bg-surface-container text-on-surface-variant border-outline-variant/20"
+    };
+
+    string SeverityIcon(string severity) => severity switch
+    {
+        "KRİTİK" => "priority_high",
+        "YÜKSEK" => "warning",
+        "ORTA" => "remove",
+        _ => "check_circle"
+    };
 }
 
-<div class="flex flex-col w-full px-8 pb-12 gap-8">
-    <div class="flex items-end justify-between w-full">
-        <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-3 text-on-surface-variant">
-                <span class="material-symbols-outlined text-[20px]">warning</span>
-                <span class="font-label-md uppercase tracking-widest text-on-surface-variant">İzleme & Teşhis</span>
+<div class="min-h-screen bg-surface-container-low p-4">
+
+    <div class="max-w-[1600px] mx-auto space-y-3">
+
+        <!-- ========================================================= -->
+        <!-- BAŞLIK -->
+        <!-- ========================================================= -->
+
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+
+            <div>
+
+                <div class="flex items-center gap-2 text-secondary text-[10px] font-bold uppercase tracking-wider">
+
+                    <span class="material-symbols-outlined text-[17px]">
+                        monitoring
+                    </span>
+
+                    İzleme & Teşhis
+
+                </div>
+
+                <h1 class="text-xl font-bold text-on-surface mt-0.5">
+                    Satış Anomali Analizi
+                </h1>
+
+                <p class="text-[11px] text-on-surface-variant mt-0.5 max-w-3xl leading-4">
+                    ML.NET SSA tabanlı Spike Detection ile ülke, şehir ve ürün
+                    seviyesinde normal satış davranışından ciddi biçimde
+                    sapan günler analiz edilmektedir.
+                </p>
+
             </div>
-            <h1 class="font-display-lg text-on-surface">Anomali Tespiti - Satış İzleme</h1>
-            <p class="font-body-lg text-on-surface-variant max-w-2xl">Zaman serisi verilerinde beklenen trendlerden sapan anormal satış hareketlerinin SrCNN tabanlı analizi.</p>
+
+            <div class="flex flex-wrap items-center gap-2">
+
+                <div class="bg-rose-500/5 rounded-lg border border-rose-500/15 px-3 py-1.5">
+
+                    <p class="text-[9px] uppercase font-bold tracking-wide text-rose-600">
+                        Anomali
+                    </p>
+
+                    <p class="text-base font-extrabold text-rose-700">
+                        @anomalyCount.ToString("N0")
+                    </p>
+
+                </div>
+
+                <div class="bg-surface rounded-lg border border-outline-variant/30 px-3 py-1.5">
+
+                    <p class="text-[9px] uppercase font-bold tracking-wide text-on-surface-variant">
+                        Sıçrama
+                    </p>
+
+                    <p class="text-base font-extrabold text-rose-700">
+                        @spikeCount.ToString("N0")
+                    </p>
+
+                </div>
+
+                <div class="bg-surface rounded-lg border border-outline-variant/30 px-3 py-1.5">
+
+                    <p class="text-[9px] uppercase font-bold tracking-wide text-on-surface-variant">
+                        Düşüş
+                    </p>
+
+                    <p class="text-base font-extrabold text-orange-700">
+                        @dropCount.ToString("N0")
+                    </p>
+
+                </div>
+
+            </div>
+
         </div>
-        <div class="flex items-center gap-4 bg-surface-container-high px-6 py-4 rounded-xl shadow-sm">
-            <div class="flex flex-col">
-                <span class="font-label-md text-on-surface-variant uppercase tracking-widest mb-1">Toplam Anomali</span>
-                <div class="flex items-baseline gap-2">
-                    <span class="font-headline-md text-error">12</span>
-                    <span class="font-body-sm text-on-surface-variant">/ 30 Gün</span>
-                </div>
-            </div>
-            <div class="w-[1px] h-10 bg-outline-variant/30 mx-2"></div>
-            <div class="flex flex-col">
-                <span class="font-label-md text-on-surface-variant uppercase tracking-widest mb-1">Anomali Oranı</span>
-                <div class="flex items-baseline gap-2">
-                    <span class="font-headline-md text-on-surface">%2.4</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="grid grid-cols-12 gap-6 w-full">
-        <!-- Sidebar: Detection Parameters -->
-        <div class="col-span-12 lg:col-span-3 flex flex-col gap-6">
-            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6">
-                <div class="flex items-center gap-2 mb-6">
-                    <span class="material-symbols-outlined text-secondary">tune</span>
-                    <h2 class="font-headline-sm text-on-surface">Tespit Parametreleri</h2>
-                </div>
-                <div class="flex flex-col gap-6">
-                    <div class="flex flex-col gap-3">
-                        <div class="flex items-center justify-between">
-                            <label class="font-label-md text-on-surface-variant uppercase">Hassasiyet (P-Value)</label>
-                            <span class="font-data-mono text-secondary">0.95</span>
-                        </div>
-                        <input class="w-full accent-secondary h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer" max="100" min="0" type="range" value="95" />
-                        <div class="flex justify-between text-[11px] font-label-md text-outline">
-                            <span>Düşük Uyarı</span>
-                            <span>Yüksek Uyarı</span>
-                        </div>
+
+
+        <!-- ========================================================= -->
+        <!-- METODOLOJİ -->
+        <!-- ========================================================= -->
+
+        <section class="bg-surface rounded-xl border border-outline-variant/30 shadow-sm p-3">
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+
+                <div class="flex items-start gap-2.5">
+
+                    <div class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+
+                        <span class="material-symbols-outlined text-[18px]">
+                            auto_graph
+                        </span>
+
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="font-label-md text-on-surface-variant uppercase">Algoritma Seçimi</label>
-                        <div class="flex items-center justify-between bg-surface-container p-3 rounded-lg cursor-not-allowed opacity-80">
-                            <span class="font-data-mono text-sm text-on-surface">SrCnnAnomalyEstimator</span>
-                            <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="font-label-md text-on-surface-variant uppercase">Veri Aralığı</label>
-                        <select class="bg-surface border-none text-body-md text-on-surface py-3 px-4 rounded-lg focus:ring-2 focus:ring-secondary/50 outline-none w-full appearance-none shadow-sm shadow-black/5 cursor-pointer">
-                            <option>Son 30 Gün</option>
-                            <option>Son 90 Gün</option>
-                            <option>Yılbaşından Bugüne</option>
-                        </select>
-                    </div>
-                    <div class="mt-4 pt-6 border-t border-outline-variant/30">
-                        <button class="w-full py-3 px-4 bg-primary text-on-primary font-label-md uppercase tracking-wider rounded-lg hover:bg-inverse-surface transition-colors shadow-md flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-[18px]">autorenew</span>
-                            Analizi Yeniden Çalıştır
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-error-container text-on-error-container rounded-xl p-5 flex gap-3 shadow-sm">
-                <span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5">campaign</span>
-                <div>
-                    <h3 class="font-label-md uppercase mb-1">Sistem Uyarısı</h3>
-                    <p class="font-body-sm opacity-90">Son 48 saat içinde beklenen hacmin 3 katı üzerinde 2 adet "Sıçrama" tespit edildi. Pazarlama kampanyası etkisi incelenmelidir.</p>
-                </div>
-            </div>
-        </div>
-        <!-- Main Content: Chart & Table -->
-        <div class="col-span-12 lg:col-span-9 flex flex-col gap-6">
-            <!-- Chart Card -->
-            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 flex flex-col h-[400px]">
-                <div class="flex items-start justify-between mb-8">
+
                     <div>
-                        <h2 class="font-headline-sm text-on-surface mb-1">Satış Hacmi vs. Beklenen Trend</h2>
-                        <p class="font-body-sm text-on-surface-variant">SrCNN ile tespit edilen günlük toplam satış sapmaları (Son 30 Gün)</p>
+
+                        <h2 class="text-xs font-bold text-on-surface">
+                            Anomali Algoritması
+                        </h2>
+
+                        <p class="text-[10px] text-on-surface-variant mt-0.5 leading-4 max-w-3xl">
+
+                            Her
+                            <strong class="text-on-surface">
+                                ülke + şehir + ürün
+                            </strong>
+                            kombinasyonu ayrı bir zaman serisi olarak değerlendirilir.
+
+                            ML.NET SSA, serinin geçmiş davranışına göre
+                            olağan dışı sıçrama ve düşüşleri tespit eder.
+
+                            Beklenen satış değeri ise hedef tarihten önceki
+                            veriler kullanılarak ForecastingService tarafından hesaplanır.
+
+                        </p>
+
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-secondary"></div>
-                            <span class="font-label-md text-on-surface-variant">Gerçek Satış</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-error"></div>
-                            <span class="font-label-md text-on-surface-variant">Anomali Tespit Edildi</span>
-                        </div>
-                    </div>
+
                 </div>
-                <!-- Synthetic Chart Representation -->
-                <div class="flex-1 w-full relative">
-                    <!-- Grid Lines -->
-                    <div class="absolute inset-0 flex flex-col justify-between">
-                        <div class="border-t border-outline-variant/20 w-full"></div>
-                        <div class="border-t border-outline-variant/20 w-full"></div>
-                        <div class="border-t border-outline-variant/20 w-full"></div>
-                        <div class="border-t border-outline-variant/20 w-full"></div>
-                        <div class="border-t border-outline-variant/20 w-full text-[10px] font-data-mono text-outline-variant/70 -mt-2">0</div>
-                    </div>
-                    <!-- Mock Line Chart -->
-                    <div class="absolute inset-0 pt-4 pb-8 pl-8 flex items-end">
-                        <svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 1000 200">
-                            <!-- Expected Trend (Confidence Band) -->
-                            <path d="M0,150 L100,140 L200,160 L300,130 L400,140 L500,120 L600,130 L700,110 L800,120 L900,100 L1000,110 L1000,190 L900,180 L800,200 L700,190 L600,210 L500,200 L400,220 L300,210 L200,240 L100,220 L0,230 Z" fill="rgba(0, 81, 213, 0.05)"></path>
-                            <!-- Actual Volume Line -->
-                            <path d="M0,170 C50,165 80,150 100,160 C150,170 180,140 200,180 C250,220 280,160 300,150 C350,140 380,170 400,160 C420,150 430,40 450,20 C470,60 480,150 500,140 C550,130 580,145 600,150 C650,155 680,130 700,140 C720,150 730,220 750,240 C770,180 780,135 800,140 C850,150 880,120 900,130 C950,140 980,115 1000,120" fill="none" stroke="#0051d5" stroke-width="2" vector-effect="non-scaling-stroke"></path>
-                            <!-- Anomaly Markers -->
-                            <circle class="animate-pulse" cx="450" cy="20" fill="#ba1a1a" r="5"></circle>
-                            <circle class="animate-pulse" cx="750" cy="240" fill="#ba1a1a" r="5"></circle>
-                            <!-- Date Labels X-Axis -->
-                            <g class="text-[10px] font-data-mono fill-outline-variant font-medium" transform="translate(0, 220)">
-                                <text x="0" y="0">Eki 01</text>
-                                <text x="250" y="0">Eki 08</text>
-                                <text x="500" y="0">Eki 15</text>
-                                <text x="750" y="0">Eki 22</text>
-                                <text x="960" y="0">Eki 30</text>
-                            </g>
-                        </svg>
-                    </div>
+
+
+                <div class="flex flex-wrap gap-1.5">
+
+                    <span class="px-2 py-1 rounded-md bg-secondary-container text-on-secondary-container text-[9px] font-bold">
+                        SSA Spike Detection
+                    </span>
+
+                    <span class="px-2 py-1 rounded-md bg-surface-container text-on-surface-variant text-[9px] font-semibold">
+                        Güven: %95
+                    </span>
+
+                    <span class="px-2 py-1 rounded-md bg-surface-container text-on-surface-variant text-[9px] font-semibold">
+                        Geçmiş: 30 gün
+                    </span>
+
+                    <span class="px-2 py-1 rounded-md bg-surface-container text-on-surface-variant text-[9px] font-semibold">
+                        Sezon: 7 gün
+                    </span>
+
                 </div>
+
             </div>
-            <!-- Detection Log Table -->
-            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between">
-                    <h3 class="font-headline-sm text-on-surface">Tespit Günlüğü</h3>
-                    <button class="flex items-center gap-2 text-secondary font-label-md uppercase hover:bg-secondary-container/50 px-3 py-1.5 rounded-lg transition-colors">
-                        <span class="material-symbols-outlined text-[18px]">download</span>
-                        CSV İndir
-                    </button>
+
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- ÖZET KARTLARI -->
+        <!-- ========================================================= -->
+
+        <div class="grid grid-cols-2 xl:grid-cols-5 gap-2.5">
+
+            <!-- Toplam -->
+
+            <div class="bg-surface rounded-lg border border-rose-500/15 p-3">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-[9px] uppercase font-bold tracking-wide text-rose-600">
+                            Tespit Edilen Anomali
+                        </p>
+
+                        <p class="text-lg font-extrabold text-rose-700 mt-0.5">
+                            @anomalyCount.ToString("N0")
+                        </p>
+
+                    </div>
+
+                    <span class="material-symbols-outlined text-rose-600 text-[20px]">
+                        warning
+                    </span>
+
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="bg-surface-container-low/50">
-                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider">Tarih</th>
-                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-right">Gerçek Hacim</th>
-                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-right">Beklenen Hacim</th>
-                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider text-center">Anomali Skoru</th>
-                                <th class="px-6 py-4 font-label-md text-on-surface-variant uppercase tracking-wider">Durum</th>
-                                <th class="px-6 py-4 w-12"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-outline-variant/10">
-                            <!-- Anomaly Row (Spike) -->
-                            <tr class="hover:bg-surface-container-low transition-colors bg-error-container/10">
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-08</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface font-semibold text-right">14,250</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,100 ± 500</td>
-                                <td class="px-6 py-4 font-data-mono text-error font-bold text-center">0.992</td>
-                                <td class="px-6 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-error/10 text-error font-label-md uppercase">
-                                        <span class="material-symbols-outlined text-[14px]">trending_up</span>
-                                        SIÇRAMA
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
-                                </td>
-                            </tr>
-                            <!-- Normal Row -->
-                            <tr class="hover:bg-surface-container-low transition-colors">
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-07</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">8,340</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,250 ± 480</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.145</td>
-                                <td class="px-6 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        NORMAL
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
-                                </td>
-                            </tr>
-                            <!-- Normal Row -->
-                            <tr class="hover:bg-surface-container-low transition-colors">
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-06</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">7,920</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,400 ± 510</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.231</td>
-                                <td class="px-6 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        NORMAL
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
-                                </td>
-                            </tr>
-                            <!-- Anomaly Row (Dip) -->
-                            <tr class="hover:bg-surface-container-low transition-colors bg-error-container/10">
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-05</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface font-semibold text-right">2,100</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,550 ± 520</td>
-                                <td class="px-6 py-4 font-data-mono text-error font-bold text-center">0.985</td>
-                                <td class="px-6 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-error/10 text-error font-label-md uppercase">
-                                        <span class="material-symbols-outlined text-[14px]">trending_down</span>
-                                        DÜŞÜŞ
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
-                                </td>
-                            </tr>
-                            <!-- Normal Row -->
-                            <tr class="hover:bg-surface-container-low transition-colors">
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-sm">2023-10-04</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface text-right">8,600</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-right">8,700 ± 550</td>
-                                <td class="px-6 py-4 font-data-mono text-on-surface-variant text-center">0.089</td>
-                                <td class="px-6 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md uppercase">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        NORMAL
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+
             </div>
+
+
+            <!-- Sıçrama -->
+
+            <div class="bg-surface rounded-lg border border-outline-variant/30 p-3">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-[9px] uppercase font-bold tracking-wide text-on-surface-variant">
+                            Satış Sıçraması
+                        </p>
+
+                        <p class="text-lg font-extrabold text-rose-700 mt-0.5">
+                            @spikeCount.ToString("N0")
+                        </p>
+
+                    </div>
+
+                    <span class="material-symbols-outlined text-rose-600 text-[20px]">
+                        trending_up
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Düşüş -->
+
+            <div class="bg-surface rounded-lg border border-outline-variant/30 p-3">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-[9px] uppercase font-bold tracking-wide text-on-surface-variant">
+                            Satış Düşüşü
+                        </p>
+
+                        <p class="text-lg font-extrabold text-orange-700 mt-0.5">
+                            @dropCount.ToString("N0")
+                        </p>
+
+                    </div>
+
+                    <span class="material-symbols-outlined text-orange-600 text-[20px]">
+                        trending_down
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Kritik -->
+
+            <div class="bg-surface rounded-lg border border-red-500/15 p-3">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-[9px] uppercase font-bold tracking-wide text-red-600">
+                            Kritik
+                        </p>
+
+                        <p class="text-lg font-extrabold text-red-700 mt-0.5">
+                            @criticalCount.ToString("N0")
+                        </p>
+
+                    </div>
+
+                    <span class="material-symbols-outlined text-red-600 text-[20px]">
+                        priority_high
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Son Anomali -->
+
+            <div class="bg-surface rounded-lg border border-outline-variant/30 p-3">
+
+                <div class="flex items-center justify-between">
+
+                    <div>
+
+                        <p class="text-[9px] uppercase font-bold tracking-wide text-on-surface-variant">
+                            Son Anomali
+                        </p>
+
+                        <p class="text-lg font-extrabold text-on-surface mt-0.5">
+
+                            @(latestDate.HasValue
+                                                        ? latestDate.Value.ToString("dd.MM.yyyy")
+                                                        : "-")
+
+                        </p>
+
+                    </div>
+
+                    <span class="material-symbols-outlined text-secondary text-[20px]">
+                        calendar_month
+                    </span>
+
+                </div>
+
+            </div>
+
         </div>
+
+
+        <!-- ========================================================= -->
+        <!-- AÇIKLAMA -->
+        <!-- ========================================================= -->
+
+        <section class="bg-surface rounded-xl border border-outline-variant/30 shadow-sm p-3">
+
+            <div class="flex items-start gap-2.5">
+
+                <span class="material-symbols-outlined text-secondary text-[19px]">
+                    info
+                </span>
+
+                <div>
+
+                    <h3 class="text-[11px] font-bold text-on-surface">
+                        Sonuçlar nasıl okunmalı?
+                    </h3>
+
+                    <p class="text-[10px] text-on-surface-variant mt-0.5 leading-4">
+
+                        <strong>Anomali Günü</strong>,
+                        tespit edilen gündeki gerçek satış miktarıdır.
+
+                        <strong>Beklenen</strong>,
+                        ForecastingService tarafından hedef tarihten önceki
+                        satış verileri kullanılarak hesaplanan beklenen satış miktarıdır.
+
+                        <strong>Beklenenden Fark</strong>,
+                        gerçek satış ile beklenen satış arasındaki miktarsal farktır.
+
+                        <strong>Beklenenden %</strong>,
+                        gerçek satışın beklenen satıştan yüzde olarak ne kadar
+                        uzaklaştığını gösterir.
+
+                        <strong>Anomali Skoru</strong>,
+                        ML.NET SSA modelinin ürettiği sapma skorudur.
+
+                        <strong>P-Değeri</strong>,
+                        gözlenen davranışın olağan dışılığını değerlendirmede kullanılan
+                        istatistiksel ölçüdür.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- SKOR VE P-DEĞERİ -->
+        <!-- ========================================================= -->
+
+        <section class="bg-surface rounded-xl border border-outline-variant/30 shadow-sm p-3">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+
+                <div class="rounded-lg bg-rose-500/5 border border-rose-500/10 p-3">
+
+                    <div class="flex items-center gap-2 mb-1.5">
+
+                        <span class="material-symbols-outlined text-rose-600 text-[18px]">
+                            analytics
+                        </span>
+
+                        <h3 class="text-[11px] font-bold text-on-surface">
+                            Anomali Skoru nedir?
+                        </h3>
+
+                    </div>
+
+                    <p class="text-[10px] text-on-surface-variant leading-4">
+
+                        Anomali skoru, modelin gözlenen satış değerini
+                        normal zaman serisi davranışından ne kadar farklı
+                        gördüğünü ifade eder.
+
+                        Skor yükseldikçe gözlemin olağan dışı olma derecesi artar.
+
+                    </p>
+
+                    <div class="mt-2 px-2.5 py-1.5 rounded-md bg-surface-container">
+
+                        <p class="text-[9px] text-on-surface-variant">
+
+                            <strong class="text-on-surface">
+                                Örneğin:
+                            </strong>
+
+                            Yüksek bir skor, ilgili günün modelin
+                            beklediği normal davranıştan ciddi biçimde
+                            saptığını gösterir.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="rounded-lg bg-secondary-container/40 border border-secondary/10 p-3">
+
+                    <div class="flex items-center gap-2 mb-1.5">
+
+                        <span class="material-symbols-outlined text-secondary text-[18px]">
+                            query_stats
+                        </span>
+
+                        <h3 class="text-[11px] font-bold text-on-surface">
+                            P-Değeri nedir?
+                        </h3>
+
+                    </div>
+
+                    <p class="text-[10px] text-on-surface-variant leading-4">
+
+                        P-değeri, gözlenen sapmanın normal davranış altında
+                        ortaya çıkma olasılığı hakkında bilgi verir.
+
+                        Değer küçüldükçe gözlemin istatistiksel olarak
+                        daha sıra dışı olduğu kabul edilir.
+
+                    </p>
+
+                    <div class="mt-2 px-2.5 py-1.5 rounded-md bg-surface-container">
+
+                        <p class="text-[9px] text-on-surface-variant">
+
+                            <strong class="text-on-surface">
+                                Kullanılan eşik:
+                            </strong>
+
+                            0,05'in üzerindeki değerler
+                            anomaly filtresinde elenir.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================= -->
+        <!-- TABLO -->
+        <!-- ========================================================= -->
+
+        <section class="bg-surface rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden">
+
+            <div class="px-4 py-3 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center md:justify-between gap-1.5">
+
+                <div>
+
+                    <h2 class="text-xs font-bold text-on-surface">
+                        Anomali Detayları
+                    </h2>
+
+                    <p class="text-[10px] text-on-surface-variant mt-0.5">
+
+                        Ülke, şehir ve ürün bazında tespit edilen
+                        olağan dışı satış davranışları.
+
+                    </p>
+
+                </div>
+
+                <span class="text-[9px] font-bold px-2 py-1 rounded-md bg-surface-container text-on-surface-variant">
+
+                    @results.Count.ToString("N0") anomali
+
+                </span>
+
+            </div>
+
+
+            @if (!results.Any())
+            {
+                <div class="py-8 text-center">
+
+                    <span class="material-symbols-outlined text-3xl text-on-surface-variant">
+                        check_circle
+                    </span>
+
+                    <p class="mt-1 text-xs font-semibold text-on-surface">
+                        Anomali bulunamadı.
+                    </p>
+
+                    <p class="text-[10px] text-on-surface-variant mt-0.5">
+                        İncelenen satış serilerinde olağan dışı davranış tespit edilmedi.
+                    </p>
+
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+
+                    <table class="w-full min-w-[1300px] text-[10px]">
+
+                        <thead class="bg-surface-container-low">
+
+                            <tr class="text-[9px] uppercase tracking-wide text-on-surface-variant">
+
+                                <th class="px-3 py-2.5 text-left">
+                                    Tarih
+                                </th>
+
+                                <th class="px-3 py-2.5 text-left">
+                                    Ülke
+                                </th>
+
+                                <th class="px-3 py-2.5 text-left">
+                                    Şehir
+                                </th>
+
+                                <th class="px-3 py-2.5 text-left">
+                                    Ürün
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    Beklenen
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    Anomali Günü
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    Fark
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    Fark %
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    Skor
+                                </th>
+
+                                <th class="px-3 py-2.5 text-right">
+                                    P-Değeri
+                                </th>
+
+                                <th class="px-3 py-2.5 text-center">
+                                    Durum
+                                </th>
+
+                                <th class="px-3 py-2.5 text-center">
+                                    Seviye
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody class="divide-y divide-outline-variant/10">
+
+                            @foreach (
+                                                    var item in results
+                                                    .OrderByDescending(x => x.OrderDate)
+                                                    .ThenByDescending(x => Math.Abs(x.ChangePercentage))
+                                                    )
+                            {
+
+                                var expected = item.ExpectedSales;
+                                var difference = item.Change;
+                                var differencePercentage = item.ChangePercentage;
+
+                                <tr class="hover:bg-surface-container-low transition-colors
+                                            @(item.Status == "SIÇRAMA"
+                                                                            ? "bg-rose-500/[0.025]"
+                                                                            : "bg-orange-500/[0.025]")">
+
+
+                                    <!-- TARİH -->
+
+                                    <td class="px-3 py-2.5 font-semibold text-on-surface whitespace-nowrap">
+
+                                        @item.OrderDate.ToString("dd.MM.yyyy")
+
+                                    </td>
+
+
+                                    <!-- ÜLKE -->
+
+                                    <td class="px-3 py-2.5 text-on-surface">
+
+                                        @item.Country
+
+                                    </td>
+
+
+                                    <!-- ŞEHİR -->
+
+                                    <td class="px-3 py-2.5 font-semibold text-on-surface">
+
+                                        @item.City
+
+                                    </td>
+
+
+                                    <!-- ÜRÜN -->
+
+                                    <td class="px-3 py-2.5 font-semibold text-on-surface max-w-[210px]">
+
+                                        <div class="truncate"
+                                             title="@item.ProductName">
+
+                                            @item.ProductName
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <!-- BEKLENEN -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono font-bold text-secondary">
+
+                                        @expected.ToString("N1")
+
+                                    </td>
+
+
+                                    <!-- ANOMALİ GÜNÜ -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono font-extrabold
+                                                @(item.Status == "SIÇRAMA"
+                                                                                    ? "text-rose-700"
+                                                                                    : "text-orange-700")">
+
+                                        @item.Quantity.ToString("N0")
+
+                                    </td>
+
+
+                                    <!-- FARK -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono font-bold
+                                                @(difference >= 0
+                                                                                    ? "text-rose-700"
+                                                                                    : "text-orange-700")">
+
+                                        @(difference >= 0 ? "+" : "")
+                                        @difference.ToString("N1")
+
+                                    </td>
+
+
+                                    <!-- FARK % -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono font-bold
+                                                @(differencePercentage >= 0
+                                                                                    ? "text-rose-700"
+                                                                                    : "text-orange-700")">
+
+                                @(differencePercentage >= 0 ? "+" : "")
+                                @differencePercentage.ToString("N1")%
+
+                                    </td>
+
+
+                                    <!-- SKOR -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono font-bold text-rose-700">
+
+                                        @item.Score.ToString("N3")
+
+                                    </td>
+
+
+                                    <!-- P-DEĞERİ -->
+
+                                    <td class="px-3 py-2.5 text-right font-mono text-on-surface-variant">
+
+                                        @item.PValue.ToString("N3")
+
+                                    </td>
+
+
+                                    <!-- DURUM -->
+
+                                    <td class="px-3 py-2.5 text-center">
+
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[9px] font-bold @StatusClass(item.Status)">
+
+                                            <span class="material-symbols-outlined text-[12px]">
+
+                                                @StatusIcon(item.Status)
+
+                                            </span>
+
+                                            @item.Status
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <!-- SEVİYE -->
+
+                                    <td class="px-3 py-2.5 text-center">
+
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[9px] font-bold @SeverityClass(item.Severity)">
+
+                                            <span class="material-symbols-outlined text-[12px]">
+
+                                                @SeverityIcon(item.Severity)
+
+                                            </span>
+
+                                            @item.Severity
+
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+                                                }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <!-- ================================================= -->
+                <!-- SAYFALAMA -->
+                <!-- ================================================= -->
+
+                <div class="px-4 py-2 border-t border-outline-variant/20 flex items-center justify-between">
+
+                    <span id="anomalyPaginationInfo"
+                          class="text-[9px] text-on-surface-variant">
+                    </span>
+
+
+                    <div class="flex items-center gap-1">
+
+                        <button id="anomalyPrevious"
+                                type="button"
+                                class="px-2 py-1 rounded-md bg-surface-container text-[9px] font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed">
+
+                            Önceki
+
+                        </button>
+
+
+                        <span id="anomalyPage"
+                              class="px-2 text-[9px] font-bold text-on-surface">
+                        </span>
+
+
+                        <button id="anomalyNext"
+                                type="button"
+                                class="px-2 py-1 rounded-md bg-surface-container text-[9px] font-semibold text-on-surface disabled:opacity-40 disabled:cursor-not-allowed">
+
+                            Sonraki
+
+                        </button>
+
+                    </div>
+
+                </div>
+            }
+
+        </section>
+
     </div>
+
 </div>
+
+
+@section Scripts {
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const rows = [
+                ...document.querySelectorAll("table tbody tr")
+            ];
+
+            const perPage = 20;
+
+            let page = 1;
+
+            const prev =
+                document.getElementById("anomalyPrevious");
+
+            const next =
+                document.getElementById("anomalyNext");
+
+            const pageLabel =
+                document.getElementById("anomalyPage");
+
+            const info =
+                document.getElementById("anomalyPaginationInfo");
+
+
+            if (!prev || !next || !pageLabel || !info)
+                return;
+
+
+            const totalPages =
+                Math.max(
+                    1,
+                    Math.ceil(rows.length / perPage)
+                );
+
+
+            function render() {
+
+                const start =
+                    (page - 1) * perPage;
+
+                const end =
+                    start + perPage;
+
+
+                rows.forEach((row, index) => {
+
+                    row.style.display =
+                        index >= start && index < end
+                            ? ""
+                            : "none";
+
+                });
+
+
+                const from =
+                    rows.length
+                        ? start + 1
+                        : 0;
+
+                const to =
+                    Math.min(
+                        end,
+                        rows.length
+                    );
+
+
+                info.textContent =
+                    `${from}-${to} / ${rows.length} anomali`;
+
+
+                pageLabel.textContent =
+                    `${page} / ${totalPages}`;
+
+
+                prev.disabled =
+                    page === 1;
+
+                next.disabled =
+                    page === totalPages;
+
+            }
+
+
+            prev.addEventListener("click", () => {
+
+                if (page > 1) {
+
+                    page--;
+
+                    render();
+
+                }
+
+            });
+
+
+            next.addEventListener("click", () => {
+
+                if (page < totalPages) {
+
+                    page++;
+
+                    render();
+
+                }
+
+            });
+
+
+            render();
+
+        });
+
+    </script>
+
+}

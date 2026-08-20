@@ -1,12 +1,39 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ECommerceSalesIntelligence.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceSalesIntelligence.Controllers
 {
     public class AnomaliesController : Controller
     {
-        public IActionResult Index()
+        private readonly AnomalyDetectionService _service;
+
+        public AnomaliesController(
+            AnomalyDetectionService service)
         {
-            return View();
+            _service = service;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            try
+            {
+                var results =
+                    await _service.DetectAnomaliesAsync();
+
+                return View(results);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error =
+                    "Anomali analizi sırasında hata oluştu.";
+
+                ViewBag.ErrorDetail = ex.Message;
+
+                return View(
+                    new List<
+                        ECommerceSalesIntelligence.Models
+                        .SalesAnomalyResultViewModel>());
+            }
         }
     }
 }

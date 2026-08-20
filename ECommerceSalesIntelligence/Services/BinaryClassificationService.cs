@@ -13,8 +13,26 @@ namespace ECommerceSalesIntelligence.Services
         private readonly MLContext _mlContext;
         private readonly IMemoryCache _memoryCache;
 
-        private const string CacheKey = "BinaryClassificationDashboardCache_v3";
-        private const float ClassificationThreshold = 7000f;
+        // Eşik değiştiği için cache key de değiştirildi.
+        private const string CacheKey =
+            "BinaryClassificationDashboardCache_v12_650";
+
+        // ============================================================
+        // CLASSIFICATION THRESHOLD
+        //
+        // SQL analizimiz:
+        //
+        // Min aylık satış : 257
+        // Ortalama        : 649.57
+        // Max aylık satış : 1864
+        //
+        // Bu nedenle 7000 yerine 650 kullanıyoruz.
+        //
+        // 650 ve üzeri  = EVET / AŞTI
+        // 650 altı      = HAYIR / ALTINDA
+        // ============================================================
+
+        private const float ClassificationThreshold = 650f;
 
         public BinaryClassificationService(
             AppDbContext context,
@@ -28,190 +46,595 @@ namespace ECommerceSalesIntelligence.Services
 
         public ClassificationDashboardViewModel GetBinaryDashboardData()
         {
+            // ============================================================
+            // 1. CACHE
+            // ============================================================
+
             if (_memoryCache.TryGetValue(
                 CacheKey,
-                out ClassificationDashboardViewModel cachedModel))
+                out ClassificationDashboardViewModel? cachedModel)
+                && cachedModel != null)
             {
                 return cachedModel;
             }
 
-            var dbMonthlySales = _context.SalesRecords
+            // ============================================================
+            // 2. SATIŞ VERİLERİNİ SQL'DEN AL
+            // ============================================================
+
+            var salesRecords = _context.SalesRecords
                 .AsNoTracking()
+                .Select(x => new
+                {
+                    x.City,
+                    x.ProductName,
+                    x.OrderDate,
+                    x.Quantity
+                })
+                .ToList();
+
+            if (!salesRecords.Any())
+            {
+                return EmptyResult(
+                    "Veritabanında satış verisi bulunamadı.");
+            }
+
+            // ============================================================
+            // 3. GÜNLÜK SATIŞLARI AYLIK SATIŞA ÇEVİR
+            //
+            // EF Core GroupBy problemi yaşamamak için
+            // grouping işlemi C# tarafında yapılıyor.
+            // ============================================================
+
+            var rawMonthlySales = salesRecords
                 .GroupBy(x => new
                 {
-                    City = x.City ?? "İstanbul",
+                    City = string.IsNullOrWhiteSpace(x.City)
+                        ? "Bilinmeyen Şehir"
+                        : x.City.Trim(),
+
+                    ProductName = string.IsNullOrWhiteSpace(x.ProductName)
+                        ? "Bilinmeyen Ürün"
+                        : x.ProductName.Trim(),
+
                     Year = x.OrderDate.Year,
                     Month = x.OrderDate.Month
                 })
-                .Select(g => new
+                .Select(g => new MonthlySale
                 {
-                    g.Key.City,
-                    g.Key.Year,
-                    g.Key.Month,
-                    TotalQuantity = g.Sum(x => (float)x.Quantity)
+                    City = g.Key.City,
+
+                    ProductName = g.Key.ProductName,
+
+                    Date = new DateTime(
+                        g.Key.Year,
+                        g.Key.Month,
+                        1),
+
+                    TotalQuantity = g.Sum(
+                        x => Convert.ToSingle(x.Quantity))
                 })
                 .OrderBy(x => x.City)
-                .ThenBy(x => x.Year)
-                .ThenBy(x => x.Month)
+                .ThenBy(x => x.ProductName)
+                .ThenBy(x => x.Date)
                 .ToList();
 
-            var cityGroups = dbMonthlySales
-                .GroupBy(x => x.City)
+            if (!rawMonthlySales.Any())
+            {
+                return EmptyResult(
+                    "Aylık satış verisi oluşturulamadı.");
+            }
+
+            // ============================================================
+            // 4. ŞEHİR + ÜRÜN GRUPLARI
+            //
+            // En az 4 aylık geçmişi olan grupları kullanıyoruz.
+            // ============================================================
+
+            var productGroups = rawMonthlySales
+                .GroupBy(x => new
+                {
+                    x.City,
+                    x.ProductName
+                })
                 .Where(g => g.Count() >= 4)
                 .ToList();
 
-            var classificationInputData = new List<SalesClassificationInput>();
-
-            foreach (var cityGroup in cityGroups)
+            if (!productGroups.Any())
             {
-                var sortedMonths = cityGroup
-                    .OrderBy(x => x.Year)
-                    .ThenBy(x => x.Month)
-                    .ToList();
+                return EmptyResult(
+                    "En az 4 aylık satış geçmişi bulunan şehir-ürün grubu bulunamadı.");
+            }
 
-                for (int i = 3; i < sortedMonths.Count; i++)
+            // ============================================================
+            // 5. EĞİTİM VERİSİ OLUŞTUR
+            //
+            // Özellikler:
+            //
+            // - Şehir
+            // - Ürün
+            // - Son 3 aylık toplam satış
+            // - Son ay satış
+            // - 3 aylık ortalama
+            //
+            // LABEL:
+            //
+            // Hedef ay >= 650  => EVET
+            // Hedef ay < 650   => HAYIR
+            // ============================================================
+
+            var trainingData =
+                new List<SalesClassificationInput>();
+
+            foreach (var group in productGroups)
+            {
+                var monthlyData = group
+                    .OrderBy(x => x.Date)
+                    .ToDictionary(
+                        x => x.Date,
+                        x => x.TotalQuantity);
+
+                var firstDate = monthlyData.Keys.Min();
+                var lastDate = monthlyData.Keys.Max();
+
+                int monthDifference =
+                    (lastDate.Year - firstDate.Year) * 12
+                    + lastDate.Month
+                    - firstDate.Month;
+
+                if (monthDifference < 3)
                 {
-                    var threeMonthsAgo = sortedMonths[i - 3];
-                    var twoMonthsAgo = sortedMonths[i - 2];
-                    var lastMonth = sortedMonths[i - 1];
-                    var targetMonth = sortedMonths[i];
+                    continue;
+                }
 
-                    var expectedTargetDate = new DateTime(
-                        lastMonth.Year,
-                        lastMonth.Month,
-                        1).AddMonths(1);
+                var currentDate =
+                    firstDate.AddMonths(3);
 
-                    var actualTargetDate = new DateTime(
-                        targetMonth.Year,
-                        targetMonth.Month,
-                        1);
+                while (currentDate <= lastDate)
+                {
+                    var month1 = currentDate.AddMonths(-3);
+                    var month2 = currentDate.AddMonths(-2);
+                    var month3 = currentDate.AddMonths(-1);
 
-                    if (actualTargetDate != expectedTargetDate)
+                    float sales1 =
+                        monthlyData.TryGetValue(
+                            month1,
+                            out var value1)
+                            ? value1
+                            : 0f;
+
+                    float sales2 =
+                        monthlyData.TryGetValue(
+                            month2,
+                            out var value2)
+                            ? value2
+                            : 0f;
+
+                    float sales3 =
+                        monthlyData.TryGetValue(
+                            month3,
+                            out var value3)
+                            ? value3
+                            : 0f;
+
+                    if (!monthlyData.TryGetValue(
+                        currentDate,
+                        out var targetQuantity))
+                    {
+                        currentDate =
+                            currentDate.AddMonths(1);
+
                         continue;
+                    }
+
+                    float lastThreeMonthsSales =
+                        sales1 +
+                        sales2 +
+                        sales3;
 
                     float threeMonthAverage =
-                        (
-                            threeMonthsAgo.TotalQuantity +
-                            twoMonthsAgo.TotalQuantity +
-                            lastMonth.TotalQuantity
-                        ) / 3f;
+                        lastThreeMonthsSales / 3f;
 
-                    float targetQuantity = targetMonth.TotalQuantity;
-                    bool label = targetQuantity >= ClassificationThreshold;
+                    // ====================================================
+                    // LABEL
+                    // ====================================================
 
-                    classificationInputData.Add(new SalesClassificationInput
-                    {
-                        City = cityGroup.Key,
-                        ProductName = "Genel Ürün",
-                        ThreeMonthsAgo = threeMonthsAgo.TotalQuantity,
-                        TwoMonthsAgo = twoMonthsAgo.TotalQuantity,
-                        LastMonth = lastMonth.TotalQuantity,
-                        ThreeMonthAverage = (float)Math.Round(threeMonthAverage, 1),
-                        TargetMonth = actualTargetDate.ToString("yyyy-MM"),
-                        TargetQuantity = targetQuantity,
-                        Label = label
-                    });
+                    bool label =
+                        targetQuantity >=
+                        ClassificationThreshold;
+
+                    trainingData.Add(
+                        new SalesClassificationInput
+                        {
+                            City =
+                                group.Key.City,
+
+                            ProductName =
+                                group.Key.ProductName,
+
+                            LastThreeMonthsSales =
+                                lastThreeMonthsSales,
+
+                            LastMonthSales =
+                                sales3,
+
+                            ThreeMonthAverage =
+                                threeMonthAverage,
+
+                            TargetMonth =
+                                currentDate.ToString("yyyy-MM"),
+
+                            TargetQuantity =
+                                targetQuantity,
+
+                            Label =
+                                label
+                        });
+
+                    currentDate =
+                        currentDate.AddMonths(1);
                 }
             }
 
-            if (!classificationInputData.Any())
+            // ============================================================
+            // 6. SINIF DAĞILIMI
+            // ============================================================
+
+            int positiveCount =
+                trainingData.Count(x => x.Label);
+
+            int negativeCount =
+                trainingData.Count(x => !x.Label);
+
+            // ============================================================
+            // 7. YETERLİ VERİ KONTROLÜ
+            // ============================================================
+
+            if (trainingData.Count < 4)
             {
-                return new ClassificationDashboardViewModel
-                {
-                    Metrics = null,
-                    Predictions = new List<SalesClassificationPrediction>(),
-                    Threshold = ClassificationThreshold
-                };
+                return EmptyResult(
+                    $"Model eğitimi için yeterli kayıt oluşturulamadı. " +
+                    $"Oluşturulan eğitim kaydı: {trainingData.Count}");
             }
 
-            int trueCount = classificationInputData.Count(x => x.Label);
-            int falseCount = classificationInputData.Count(x => !x.Label);
-
-            if (trueCount == 0 || falseCount == 0)
+            if (positiveCount == 0)
             {
-                return new ClassificationDashboardViewModel
-                {
-                    Metrics = null,
-                    Predictions = new List<SalesClassificationPrediction>(),
-                    Threshold = ClassificationThreshold
-                };
+                return EmptyResult(
+                    $"Eğitim verilerinde {ClassificationThreshold:N0} ve üzeri " +
+                    $"satış bulunan kayıt yok. " +
+                    $"Toplam: {trainingData.Count}, " +
+                    $"EVET: {positiveCount}, " +
+                    $"HAYIR: {negativeCount}");
             }
 
-            var dataView = _mlContext.Data.LoadFromEnumerable(classificationInputData);
+            if (negativeCount == 0)
+            {
+                return EmptyResult(
+                    $"Eğitim verilerinde {ClassificationThreshold:N0} altı " +
+                    $"satış bulunan kayıt yok. " +
+                    $"Toplam: {trainingData.Count}, " +
+                    $"EVET: {positiveCount}, " +
+                    $"HAYIR: {negativeCount}");
+            }
 
-            var splitData = _mlContext.Data.TrainTestSplit(
-                dataView,
-                testFraction: 0.20,
-                seed: 42);
+            // ============================================================
+            // 8. ML.NET DATA
+            // ============================================================
 
-            var pipeline = _mlContext.Transforms
-                .Concatenate(
-                    "Features",
-                    nameof(SalesClassificationInput.ThreeMonthsAgo),
-                    nameof(SalesClassificationInput.TwoMonthsAgo),
-                    nameof(SalesClassificationInput.LastMonth),
-                    nameof(SalesClassificationInput.ThreeMonthAverage))
+            IDataView data =
+                _mlContext.Data.LoadFromEnumerable(
+                    trainingData);
+
+            // ============================================================
+            // 9. TRAIN / TEST
+            // ============================================================
+
+            var split =
+                _mlContext.Data.TrainTestSplit(
+                    data,
+                    testFraction: 0.20,
+                    seed: 42);
+
+            // ============================================================
+            // 10. PIPELINE
+            // ============================================================
+
+            var pipeline =
+                _mlContext.Transforms.Categorical.OneHotEncoding(
+                    outputColumnName: "CityEncoded",
+                    inputColumnName:
+                        nameof(SalesClassificationInput.City))
+
                 .Append(
-                    _mlContext.Transforms.NormalizeMinMax("Features"))
+                    _mlContext.Transforms.Categorical.OneHotEncoding(
+                        outputColumnName: "ProductEncoded",
+                        inputColumnName:
+                            nameof(SalesClassificationInput.ProductName)))
+
+                .Append(
+                    _mlContext.Transforms.Concatenate(
+                        "Features",
+
+                        "CityEncoded",
+
+                        "ProductEncoded",
+
+                        nameof(
+                            SalesClassificationInput
+                                .LastThreeMonthsSales),
+
+                        nameof(
+                            SalesClassificationInput
+                                .LastMonthSales),
+
+                        nameof(
+                            SalesClassificationInput
+                                .ThreeMonthAverage)))
+
+                .Append(
+                    _mlContext.Transforms.NormalizeMinMax(
+                        "Features"))
+
                 .Append(
                     _mlContext.BinaryClassification.Trainers
                         .SdcaLogisticRegression(
                             labelColumnName: "Label",
                             featureColumnName: "Features"));
 
-            var model = pipeline.Fit(splitData.TrainSet);
+            // ============================================================
+            // 11. MODEL EĞİTİMİ
+            // ============================================================
 
-            var transformedTestSet = model.Transform(splitData.TestSet);
+            ITransformer model =
+                pipeline.Fit(
+                    split.TrainSet);
 
-            var metrics = _mlContext.BinaryClassification.Evaluate(
-                transformedTestSet,
-                labelColumnName: "Label");
+            // ============================================================
+            // 12. TEST
+            // ============================================================
+
+            IDataView testResult =
+                model.Transform(
+                    split.TestSet);
+
+            var metrics =
+                _mlContext.BinaryClassification.Evaluate(
+                    testResult,
+                    labelColumnName: "Label");
+
+            // ============================================================
+            // 13. PREDICTION ENGINE
+            // ============================================================
 
             var predictionEngine =
                 _mlContext.Model.CreatePredictionEngine<
                     SalesClassificationInput,
-                    SalesClassificationPrediction>(model);
+                    SalesClassificationPrediction>(
+                        model);
 
-            var latestInputs = classificationInputData
-                .GroupBy(x => x.City)
-                .Select(g => g
-                    .OrderByDescending(x => x.TargetMonth)
-                    .First())
-                .ToList();
+            // ============================================================
+            // 14. GELECEK AY VERİLERİ
+            // ============================================================
 
-            var predictionList = latestInputs
-                .Select(input =>
-                {
-                    var prediction = predictionEngine.Predict(input);
+            var futureInputs =
+                new List<SalesClassificationInput>();
 
-                    return new SalesClassificationPrediction
-                    {
-                        City = input.City,
-                        ThreeMonthsAgo = input.ThreeMonthsAgo,
-                        TwoMonthsAgo = input.TwoMonthsAgo,
-                        LastMonth = input.LastMonth,
-                        ThreeMonthAverage = input.ThreeMonthAverage,
-                        PredictedLabel = prediction.PredictedLabel,
-                        Probability = prediction.Probability,
-                        Score = prediction.Score
-                    };
-                })
-                .OrderByDescending(x => x.Probability)
-                .ToList();
-
-            var viewModel = new ClassificationDashboardViewModel
+            foreach (var group in productGroups)
             {
-                Metrics = metrics,
-                Predictions = predictionList,
-                Threshold = ClassificationThreshold
-            };
+                var monthlyData = group
+                    .OrderBy(x => x.Date)
+                    .ToDictionary(
+                        x => x.Date,
+                        x => x.TotalQuantity);
 
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+                if (monthlyData.Count < 3)
+                {
+                    continue;
+                }
 
-            _memoryCache.Set(CacheKey, viewModel, cacheOptions);
+                var lastDate =
+                    monthlyData.Keys.Max();
+
+                var month1 =
+                    lastDate.AddMonths(-2);
+
+                var month2 =
+                    lastDate.AddMonths(-1);
+
+                var month3 =
+                    lastDate;
+
+                float sales1 =
+                    monthlyData.TryGetValue(
+                        month1,
+                        out var value1)
+                        ? value1
+                        : 0f;
+
+                float sales2 =
+                    monthlyData.TryGetValue(
+                        month2,
+                        out var value2)
+                        ? value2
+                        : 0f;
+
+                float sales3 =
+                    monthlyData.TryGetValue(
+                        month3,
+                        out var value3)
+                        ? value3
+                        : 0f;
+
+                float lastThreeMonthsSales =
+                    sales1 +
+                    sales2 +
+                    sales3;
+
+                float threeMonthAverage =
+                    lastThreeMonthsSales / 3f;
+
+                var futureDate =
+                    lastDate.AddMonths(1);
+
+                futureInputs.Add(
+                    new SalesClassificationInput
+                    {
+                        City =
+                            group.Key.City,
+
+                        ProductName =
+                            group.Key.ProductName,
+
+                        LastThreeMonthsSales =
+                            lastThreeMonthsSales,
+
+                        LastMonthSales =
+                            sales3,
+
+                        ThreeMonthAverage =
+                            threeMonthAverage,
+
+                        TargetMonth =
+                            futureDate.ToString("yyyy-MM"),
+
+                        TargetQuantity = 0,
+
+                        Label = false
+                    });
+            }
+
+            if (!futureInputs.Any())
+            {
+                return EmptyResult(
+                    "Gelecek ay için tahmin oluşturulabilecek şehir-ürün verisi bulunamadı.");
+            }
+
+            // ============================================================
+            // 15. TAHMİNLER
+            // ============================================================
+
+            var predictions =
+                new List<SalesClassificationPrediction>();
+
+            foreach (var input in futureInputs)
+            {
+                var prediction =
+                    predictionEngine.Predict(input);
+
+                predictions.Add(
+                    new SalesClassificationPrediction
+                    {
+                        City =
+                            input.City,
+
+                        ProductName =
+                            input.ProductName,
+
+                        LastThreeMonthsSales =
+                            input.LastThreeMonthsSales,
+
+                        LastMonthSales =
+                            input.LastMonthSales,
+
+                        ThreeMonthAverage =
+                            input.ThreeMonthAverage,
+
+                        TargetMonth =
+                            input.TargetMonth,
+
+                        PredictedLabel =
+                            prediction.PredictedLabel,
+
+                        Probability =
+                            prediction.Probability,
+
+                        Score =
+                            prediction.Score
+                    });
+            }
+
+            // ============================================================
+            // 16. SIRALA
+            // ============================================================
+
+            predictions =
+                predictions
+                    .OrderByDescending(
+                        x => x.Probability)
+                    .ToList();
+
+            // ============================================================
+            // 17. VIEW MODEL
+            // ============================================================
+
+            var viewModel =
+                new ClassificationDashboardViewModel
+                {
+                    Metrics =
+                        metrics,
+
+                    Predictions =
+                        predictions,
+
+                    Threshold =
+                        ClassificationThreshold,
+
+                    Message =
+                        $"Model {trainingData.Count:N0} eğitim kaydı ile eğitildi. " +
+                        $"EVET: {positiveCount:N0}, " +
+                        $"HAYIR: {negativeCount:N0}. " +
+                        $"Classification eşiği: {ClassificationThreshold:N0}"
+                };
+
+            // ============================================================
+            // 18. CACHE
+            // ============================================================
+
+            _memoryCache.Set(
+                CacheKey,
+                viewModel,
+                new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(
+                        TimeSpan.FromHours(1)));
 
             return viewModel;
+        }
+
+        // ================================================================
+        // EMPTY RESULT
+        // ================================================================
+
+        private ClassificationDashboardViewModel EmptyResult(
+            string message)
+        {
+            return new ClassificationDashboardViewModel
+            {
+                Metrics = null,
+
+                Predictions =
+                    new List<SalesClassificationPrediction>(),
+
+                Threshold =
+                    ClassificationThreshold,
+
+                Message =
+                    message
+            };
+        }
+
+        // ================================================================
+        // AYLIK SATIŞ MODELİ
+        // ================================================================
+
+        private class MonthlySale
+        {
+            public string City { get; set; } = "";
+
+            public string ProductName { get; set; } = "";
+
+            public DateTime Date { get; set; }
+
+            public float TotalQuantity { get; set; }
         }
     }
 }

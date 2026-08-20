@@ -1,16 +1,16 @@
 ﻿using ECommerceSalesIntelligence.Models.Classification;
-using Microsoft.ML.Data;
 
 namespace ECommerceSalesIntelligence.Models
 {
     public class ClassificationDashboardViewModel
     {
-        // Binary (İkili) Sınıflandırma Metrikleri ve Örnek Tahmin
-        public BinaryClassificationMetrics Metrics { get; set; }
-        public SalesClassificationPrediction SamplePrediction { get; set; }
+        public Microsoft.ML.Data.CalibratedBinaryClassificationMetrics? Metrics { get; set; }
 
-        // Razor sayfasındaki tablo için aranan Predictions listesi:
-        public List<SalesClassificationPrediction> Predictions { get; set; } = new();
-        public float Threshold { get; set; } // Eşik değerini ekranda göstermek için
+        public List<SalesClassificationPrediction> Predictions { get; set; }
+            = new();
+
+        public float Threshold { get; set; }
+
+        public string? Message { get; set; }
     }
 }

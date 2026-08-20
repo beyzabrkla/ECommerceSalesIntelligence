@@ -14,6 +14,9 @@ namespace ECommerceSalesIntelligence.Models
         public float[] UpperBound { get; set; } = Array.Empty<float>();
 
         [NoColumn]
+        public string City { get; set; } = string.Empty;
+
+        [NoColumn]
         public int WindowSize { get; set; }
 
         [NoColumn]
@@ -34,18 +37,22 @@ namespace ECommerceSalesIntelligence.Models
         [NoColumn]
         public List<HistoricalDetailItem> HistoricalDetails { get; set; } = new();
     }
-}
 
     public class ForecastDetailItem
     {
-        public string Date { get; set; } = string.Empty; 
+        public string Date { get; set; } = string.Empty;
+
         public float PredictedSales { get; set; }
+
         public float LowerBound { get; set; }
+
         public float UpperBound { get; set; }
     }
 
     public class HistoricalDetailItem
     {
         public string Date { get; set; } = string.Empty;
+
         public float ActualSales { get; set; }
     }
+}

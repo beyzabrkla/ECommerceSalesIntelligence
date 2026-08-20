@@ -34,98 +34,302 @@ namespace ECommerceSalesIntelligence.Controllers
             _clusteringService = clusteringService;
         }
 
-        // Belirli bir şehrin gelecek 7 günlük satış tahminini alır
+        // ============================================================
+        // FORECASTING
+        // ============================================================
+
         [HttpGet("forecast")]
-        public async Task<ActionResult<SalesPrediction>> GetSalesForecast([FromQuery] string city, [FromQuery] int horizon = 7, [FromQuery] float confidenceLevel = 0.95f)
+        public async Task<ActionResult<SalesPrediction>> GetSalesForecast(
+            [FromQuery] string city,
+            [FromQuery] int horizon = 7,
+            [FromQuery] float confidenceLevel = 0.95f)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(city))
                 {
-                    return BadRequest(new { message = "Şehir adı boş olamaz!" });
+                    return BadRequest(new
+                    {
+                        message = "Şehir adı boş olamaz."
+                    });
                 }
 
-                var prediction = await _forecastingService.PredictNextDaysAsync(city, horizon, confidenceLevel);
+                city = city.Trim();
+
+                if (horizon < 1 || horizon > 30)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Tahmin günü 1 ile 30 arasında olmalıdır."
+                    });
+                }
+
+                if (confidenceLevel <= 0 ||
+                    confidenceLevel >= 1)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Confidence level 0 ile 1 arasında olmalıdır."
+                    });
+                }
+
+                var prediction =
+                    await _forecastingService
+                        .PredictNextDaysAsync(
+                            city,
+                            horizon,
+                            confidenceLevel);
+
                 return Ok(prediction);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine("FORECAST VALIDATION/MODEL HATASI:");
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message =
+                        "Tahmin modeli çalıştırılırken hata oluştu.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
             }
             catch (Exception ex)
             {
                 Console.WriteLine("FORECAST HATASI:");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex);
 
                 return StatusCode(500, new
                 {
-                    message = "Tahmin oluşturulurken hata oluştu.",
+                    message =
+                        "Tahmin oluşturulurken beklenmeyen bir hata oluştu.",
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+
+        // ============================================================
+        // ŞEHİRLER
+        // ============================================================
+
+        [HttpGet("cities")]
+        public async Task<ActionResult<List<string>>> GetCities()
+        {
+            try
+            {
+                var cities =
+                    await _context.SalesRecords
+                        .AsNoTracking()
+                        .Where(x =>
+                            !string.IsNullOrWhiteSpace(x.City))
+                        .Select(x => x.City)
+                        .Distinct()
+                        .OrderBy(x => x)
+                        .ToListAsync();
+
+                return Ok(cities);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("CITY HATASI:");
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message =
+                        "Şehirler alınırken hata oluştu.",
                     error = ex.Message
                 });
             }
         }
 
-        [HttpGet("cities")]
-        public async Task<ActionResult<List<string>>> GetCities()
-        {
-            var count = await _context.SalesRecords.CountAsync();
-            Console.WriteLine($"Veritabanındaki toplam kayıt sayısı: {count}");
+        // ============================================================
+        // ÜRÜNLER
+        // ============================================================
 
-            var cities = await _context.SalesRecords
-                .AsNoTracking()
-                .Select(s => s.City)
-                .Distinct()
-                .ToListAsync();
-
-            return Ok(cities);
-        }
-
-        // --- BİNARY CLASSIFICATION (İkili Sınıflandırma ve Şehir Listesi Dashboard Verisi) ---
-        [HttpGet("binary-dashboard")]
-        public ActionResult<BinaryDashboardViewModel> GetBinaryDashboard()
+        [HttpGet("products")]
+        public async Task<ActionResult<List<string>>> GetProducts(
+            [FromQuery] string? city = null)
         {
             try
             {
-                var dashboardData = _binaryClassificationService.GetBinaryDashboardData();
+                var query =
+                    _context.SalesRecords
+                        .AsNoTracking()
+                        .Where(x =>
+                            !string.IsNullOrWhiteSpace(
+                                x.ProductName));
+
+                if (!string.IsNullOrWhiteSpace(city))
+                {
+                    city = city.Trim();
+
+                    query =
+                        query.Where(x =>
+                            x.City == city);
+                }
+
+                var products =
+                    await query
+                        .Select(x => x.ProductName)
+                        .Distinct()
+                        .OrderBy(x => x)
+                        .ToListAsync();
+
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("PRODUCT HATASI:");
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message =
+                        "Ürünler alınırken hata oluştu.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // ============================================================
+        // BINARY CLASSIFICATION
+        // ============================================================
+
+        [HttpGet("binary-dashboard")]
+        public ActionResult<ClassificationDashboardViewModel>
+            GetBinaryDashboard()
+        {
+            try
+            {
+                var dashboardData =
+                    _binaryClassificationService
+                        .GetBinaryDashboardData();
+
                 return Ok(dashboardData);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Binary dashboard verileri yüklenirken hata oluştu.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message =
+                        "Binary dashboard verileri yüklenirken hata oluştu.",
+                    error = ex.Message
+                });
             }
         }
 
-        // --- MULTICLASS CLASSIFICATION (Çok Sınıflı Kategorizasyon) ---
+        // ============================================================
+        // MULTICLASS CLASSIFICATION
+        // ============================================================
+
         [HttpGet("multiclass-dashboard")]
         public ActionResult RunMulticlassClassification()
         {
             try
             {
-                var predictions = _multiclassService.GetMulticlassDashboardData();
+                var predictions =
+                    _multiclassService
+                        .GetMulticlassDashboardData();
+
                 return Ok(predictions);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Multiclass classification sırasında hata oluştu.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message =
+                        "Multiclass classification sırasında hata oluştu.",
+                    error = ex.Message
+                });
             }
         }
 
-        // Anomaly Detection (Sıradışı satış günleri) tespiti yapar
-        [HttpGet("anomalies")]
-        public ActionResult<List<SalesAnomalyResultViewModel>> GetAnomalies()
-        {
-            var anomalies = _anomalyService.DetectAnomalies();
-            return Ok(anomalies);
-        }
+        // ============================================================
+        // ANOMALY DETECTION
+        // ============================================================
 
-        // Clustering (Kümeleme) modelini çalıştırır
-        [HttpGet("clusters")]
-        public ActionResult<List<ClusterResultViewModel>> GetClusters([FromQuery] int count = 3)
+        [HttpGet("anomalies")]
+        public async Task<ActionResult<
+            List<SalesAnomalyResultViewModel>>>
+            GetAnomalies()
         {
             try
             {
-                var clusters = _clusteringService.TrainAndCluster(count);
+                var anomalies =
+                    await _anomalyService
+                        .DetectAnomaliesAsync();
+
+                return Ok(anomalies);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ANOMALY HATASI:");
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message =
+                        "Anomali tespiti sırasında hata oluştu.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // ============================================================
+        // CLUSTERING
+        // ============================================================
+
+        [HttpGet("clusters")]
+        public ActionResult<List<ClusterResultViewModel>>
+            GetClusters(
+                [FromQuery] int count = 3)
+        {
+            try
+            {
+                if (count < 2)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Küme sayısı en az 2 olmalıdır."
+                    });
+                }
+
+                if (count > 20)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Küme sayısı en fazla 20 olabilir."
+                    });
+                }
+
+                var clusters =
+                    _clusteringService
+                        .TrainAndCluster(count);
+
                 return Ok(clusters);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Kümeleme yapılırken hata oluştu.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message =
+                        "Kümeleme yapılırken hata oluştu.",
+                    error = ex.Message
+                });
             }
         }
     }
