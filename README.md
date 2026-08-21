@@ -35,7 +35,6 @@ Proje içerisinde **Dashboard, Forecasting, Binary Classification, Multiclass Cl
 # 📊 Sayfalar ve İşlevleri
 ## 1️⃣ Dashboard — Genel Satış Analiz Paneli
 ### 🎯 Amaç
-
 Dashboard sayfasının amacı, veritabanındaki tüm satış verilerini tek bir ekranda **genel ve karşılaştırılabilir satış göstergelerine dönüştürerek** kullanıcının işletmenin mevcut durumunu hızlı bir şekilde analiz edebilmesini sağlamaktır.
 
 Dashboard üzerinde yalnızca toplam satış bilgileri değil, satışların **zaman, kategori, şehir, ödeme yöntemi, kampanya ve ürün bazındaki dağılımları** da gösterilir.
@@ -152,10 +151,14 @@ gibi yapılar kullanılarak satış verileri farklı analiz gruplarına ayrılı
 Elde edilen sonuçlar `DashboardViewModel` içerisinde toplanarak MVC View katmanına gönderilir.
 Bu yapı sayesinde Controller yalnızca isteği karşılayıp servisi çağırırken, **satış analizlerinin hesaplanması Service katmanında gerçekleştirilir.**
 
----
+<img width="1919" height="908" alt="Ekran görüntüsü 2026-08-21 182412" src="https://github.com/user-attachments/assets/a59dd6a6-c56e-4f78-8ad5-5282fcd26c9f" />
+<img width="1917" height="580" alt="Ekran görüntüsü 2026-08-21 182432" src="https://github.com/user-attachments/assets/73cc7ccd-0d00-408e-b0c8-010b94baede2" />
 
+
+---
 # 🧠 Yapay Zeka ve Makine Öğrenmesi Modelleri (ML.NET)
 Proje içerisinde farklı iş problemlerini çözmek amacıyla aşağıdaki makine öğrenmesi yaklaşımları kullanılmaktadır:
+
 ## 2️⃣ 📈 Satış Tahmini (Forecasting)
 
 **Amaç:**  
@@ -180,6 +183,9 @@ Sistem şu adımları izler:
 ### 🧠 Kullanılan Makine Öğrenmesi Yöntemi
 Forecasting işlemi için **ML.NET `ForecastBySsa`** yöntemi kullanılmaktadır.
 SSA, geçmişteki zaman serisi verilerindeki tekrar eden davranışları ve eğilimleri analiz ederek gelecekteki değerleri tahmin etmek için kullanılan bir zaman serisi yaklaşımıdır.
+
+<img width="1920" height="1697" alt="localhost_7189_Forecasting_Index (1)" src="https://github.com/user-attachments/assets/58b32451-7e5f-4d99-ae43-b0b0f67956bc" />
+
  
 ## 3️⃣ 📊 Satış Performansı Sınıflandırması (Binary Classification)
 **Amaç:**  
@@ -224,6 +230,8 @@ Modelde kullanılan satış eşiği **650 adet** olarak belirlenmiştir.
     Düşük satış performansı
 
 Bu eşik kod içerisinde `ClassificationThreshold = 650f` olarak tanımlanmıştır.
+
+<img width="1920" height="1853" alt="localhost_7189_BinaryClassification_Index_page=7" src="https://github.com/user-attachments/assets/c31474f1-551d-4305-8fb5-8a883d420107" />
 
 
 ## 4️⃣ 📊 Multiclass Classification — Çoklu Sınıflandırma
@@ -303,6 +311,8 @@ Bunun yerine hedef ayın gerçek satış miktarının geçmiş üç aylık ortal
 | Performans ≥ P66 | 🟢 **HIGH** | Yüksek Talep |
 
 Bu yöntem sayesinde satış performansı **veri dağılımına göre dinamik olarak** Low, Medium ve High sınıflarına ayrılır.
+
+<img width="1920" height="1415" alt="localhost_7189_MulticlassClassification_Index" src="https://github.com/user-attachments/assets/173737c8-49f1-400a-bece-3a4df1de2e68" />
 
 ## 5️⃣ Görev 5: Anomaly Detection — Anomali Tespiti
 
@@ -471,6 +481,8 @@ Her tespit edilen anomali için aşağıdaki bilgiler oluşturulur:
 
 Sonuçlar **en büyük yüzde sapmadan en küçüğe doğru** sıralanır. Böylece en önemli satış anomalileri dashboard üzerinde önce gösterilir.
 
+<img width="1920" height="1590" alt="localhost_7189_Anomalies_Index" src="https://github.com/user-attachments/assets/ba65e03c-e31b-4b61-aca6-f8810429d788" />
+
 ## 6️⃣ Görev 6: Clustering — Şehirlerin Satış Davranışlarının Kümelenmesi
 
 * **Algoritma:** `KMeans`
@@ -560,6 +572,9 @@ Her kategori için:
 * 💰 Kategori cirosu
 * 📊 Toplam satış içerisindeki yüzdesi
 hesaplanır.
+
+<img width="1920" height="2681" alt="localhost_7189_Clusters_Index" src="https://github.com/user-attachments/assets/adc99e75-98ee-4dc8-b52c-22b56387a687" />
+
 
 
 ## 💡 Performans ve Veri İşleme Yaklaşımı
