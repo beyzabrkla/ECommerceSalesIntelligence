@@ -33,12 +33,9 @@ namespace ECommerceSalesIntelligence.Controllers
             _clusteringService = clusteringService;
         }
 
-        // Belirtilen şehir için gelecek günlerin satış tahminini oluşturur.
+        // Belirtilen şehir için gelecek günlerin satış tahminini oluşturur
         [HttpGet("forecast")]
-        public async Task<ActionResult<SalesPrediction>> GetSalesForecast(
-            [FromQuery] string city,
-            [FromQuery] int horizon = 7,
-            [FromQuery] float confidenceLevel = 0.95f)
+        public async Task<ActionResult<SalesPrediction>> GetSalesForecast([FromQuery] string city,[FromQuery] int horizon = 7, [FromQuery] float confidenceLevel = 0.95f)
         {
             try
             {
@@ -100,7 +97,7 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // Veritabanındaki benzersiz şehirleri alfabetik olarak getirir.
+        // Veritabanındaki benzersiz şehirleri alfabetik olarak getirir
         [HttpGet("cities")]
         public async Task<ActionResult<List<string>>> GetCities()
         {
@@ -126,10 +123,9 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // İsteğe bağlı şehir filtresiyle benzersiz ürünleri getirir.
+        // İsteğe bağlı şehir filtresiyle benzersiz ürünleri getirir
         [HttpGet("products")]
-        public async Task<ActionResult<List<string>>> GetProducts(
-            [FromQuery] string? city = null)
+        public async Task<ActionResult<List<string>>> GetProducts([FromQuery] string? city = null)
         {
             try
             {
@@ -161,7 +157,7 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // Binary classification modelinden dashboard verilerini getirir.
+        // Binary classification modelinden dashboard verilerini getirir
         [HttpGet("binary-dashboard")]
         public ActionResult<ClassificationDashboardViewModel> GetBinaryDashboard()
         {
@@ -182,7 +178,7 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // Satış davranışlarını multiclass classification ile sınıflandırır.
+        // Satış davranışlarını multiclass classification ile sınıflandırır
         [HttpGet("multiclass-dashboard")]
         public ActionResult RunMulticlassClassification()
         {
@@ -203,7 +199,7 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // Normal davranıştan ciddi şekilde sapan satış günlerini tespit eder.
+        // Normal davranıştan ciddi şekilde sapan satış günlerini tespit eder
         [HttpGet("anomalies")]
         public async Task<ActionResult<List<SalesAnomalyResultViewModel>>> GetAnomalies()
         {
@@ -224,7 +220,7 @@ namespace ECommerceSalesIntelligence.Controllers
             }
         }
 
-        // Şehirleri satış özelliklerine göre K-Means ile kümelendirir.
+        // Şehirleri satış özelliklerine göre K-Means ile kümelendirir
         [HttpGet("clusters")]
         public async Task<ActionResult<List<ClusterResultViewModel>>> GetClusters(
             [FromQuery] int count = 3)
@@ -247,8 +243,7 @@ namespace ECommerceSalesIntelligence.Controllers
                     });
                 }
 
-                var clusters = await _clusteringService
-                    .TrainAndClusterAsync(count);
+                var clusters = await _clusteringService.TrainAndClusterAsync(count);
 
                 return Ok(clusters);
             }

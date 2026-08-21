@@ -17,22 +17,15 @@ namespace ECommerceSalesIntelligence.Controllers
         {
             try
             {
-                var results =
-                    await _service.DetectAnomaliesAsync();
+                var results =await _service.DetectAnomaliesAsync();
 
                 return View(results);
             }
             catch (Exception ex)
             {
-                ViewBag.Error =
-                    "Anomali analizi sırasında hata oluştu.";
-
+                ViewBag.Error = "Anomali analizi sırasında hata oluştu.";
                 ViewBag.ErrorDetail = ex.Message;
-
-                return View(
-                    new List<
-                        ECommerceSalesIntelligence.Models
-                        .SalesAnomalyResultViewModel>());
+                return View( new List<ECommerceSalesIntelligence.Models.SalesAnomalyResultViewModel>());
             }
         }
     }

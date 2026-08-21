@@ -1,5 +1,4 @@
 using ECommerceSalesIntelligence.Context;
-using ECommerceSalesIntelligence.Mappings;
 using ECommerceSalesIntelligence.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
@@ -19,14 +18,13 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-builder.Services.AddAutoMapper(cfg => { }, typeof(GeneralMapping));
-
 builder.Services.AddSingleton<MLContext>();
 builder.Services.AddScoped<ForecastingService>();
 builder.Services.AddScoped<BinaryClassificationService>();
 builder.Services.AddScoped<MulticlassClassificationService>();
 builder.Services.AddScoped<AnomalyDetectionService>();
 builder.Services.AddScoped<ClusteringService>();
+builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddControllersWithViews();
 

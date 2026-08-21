@@ -1,12 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ECommerceSalesIntelligence.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceSalesIntelligence.Controllers
 {
     public class DashboardController : Controller
     {
-        public IActionResult Index()
+        private readonly DashboardService _dashboardService;
+
+        public DashboardController(DashboardService dashboardService)
         {
-            return View();
+            _dashboardService = dashboardService;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var model = await _dashboardService.GetDashboardAsync();
+            return View(model);
         }
     }
 }

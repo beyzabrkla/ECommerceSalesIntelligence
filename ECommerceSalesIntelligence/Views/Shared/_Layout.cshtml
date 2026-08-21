@@ -1,10 +1,11 @@
-﻿<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="tr">
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
     <style>
         @@layer base {
             html, body {
@@ -27,14 +28,15 @@
 
         ::-webkit-scrollbar {
             display: none;
-        }</style>
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script id="tailwind-config">
-          tailwind.config = {
+    <script>
+        tailwind.config = {
             darkMode: "class",
             theme: {
-              extend: {
-                "colors": {
+                extend: {
+                    colors: {
                         "inverse-on-surface": "#eaf1ff",
                         "on-tertiary-container": "#0c9488",
                         "surface-variant": "#d3e4fe",
@@ -82,181 +84,155 @@
                         "surface-container-lowest": "#ffffff",
                         "on-background": "#0b1c30",
                         "on-primary": "#ffffff"
-                },
-                "borderRadius": {
-                        "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
-                },
-                "spacing": {
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    spacing: {
                         "stack-md": "16px",
                         "stack-sm": "8px",
                         "stack-lg": "32px",
-                        "gutter": "16px",
-                        "base": "4px",
+                        gutter: "16px",
+                        base: "4px",
                         "container-margin": "24px"
-                },
-                "fontFamily": {
-                        "body-md": [
-                                "Inter"
-                        ],
-                        "data-mono": [
-                                "Inter"
-                        ],
-                        "headline-sm": [
-                                "Inter"
-                        ],
-                        "headline-md": [
-                                "Inter"
-                        ],
-                        "body-lg": [
-                                "Inter"
-                        ],
-                        "display-lg": [
-                                "Inter"
-                        ],
-                        "body-sm": [
-                                "Inter"
-                        ],
-                        "label-md": [
-                                "Inter"
-                        ]
-                },
-                "fontSize": {
-                        "body-md": [
-                                "14px",
-                                {
-                                        "lineHeight": "20px",
-                                        "fontWeight": "400"
-                                }
-                        ],
-                        "data-mono": [
-                                "14px",
-                                {
-                                        "lineHeight": "20px",
-                                        "fontWeight": "500"
-                                }
-                        ],
-                        "headline-sm": [
-                                "20px",
-                                {
-                                        "lineHeight": "28px",
-                                        "fontWeight": "600"
-                                }
-                        ],
-                        "headline-md": [
-                                "24px",
-                                {
-                                        "lineHeight": "32px",
-                                        "letterSpacing": "-0.01em",
-                                        "fontWeight": "600"
-                                }
-                        ],
-                        "body-lg": [
-                                "16px",
-                                {
-                                        "lineHeight": "24px",
-                                        "fontWeight": "400"
-                                }
-                        ],
-                        "display-lg": [
-                                "36px",
-                                {
-                                        "lineHeight": "44px",
-                                        "letterSpacing": "-0.02em",
-                                        "fontWeight": "700"
-                                }
-                        ],
-                        "body-sm": [
-                                "13px",
-                                {
-                                        "lineHeight": "18px",
-                                        "fontWeight": "400"
-                                }
-                        ],
-                        "label-md": [
-                                "12px",
-                                {
-                                        "lineHeight": "16px",
-                                        "letterSpacing": "0.05em",
-                                        "fontWeight": "600"
-                                }
-                        ]
+                    },
+                    fontFamily: {
+                        "body-md": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "data-mono": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-lg": ["36px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }]
+                    }
                 }
-        },
-            },
-          }
+            }
+        };
     </script>
 </head>
+
 <body class="bg-surface-container-low font-body-md text-on-surface">
     <aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col shadow-[1px_0_0_rgba(0,0,0,0.05)]">
-        <div class="h-16 flex items-center px-6 gap-3 mb-6">
+        <div class="h-16 flex items-center px-6 gap-3 mb-5">
             <span class="material-symbols-outlined text-secondary text-[28px]">insights</span>
-            <span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">Precision</span>
+            <span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">ECommerce Intelligence</span>
         </div>
-        <nav class="flex-1 px-3 space-y-1" data-active-classes="bg-secondary-container text-on-secondary-container">
-            <a aria-current="page" class="flex items-center px-4 py-2.5 rounded-lg transition-all group bg-secondary-container text-on-secondary-container" data-path="dashboard" href="#">
+
+        <nav class="flex-1 px-3 space-y-1">
+            <a href="/Dashboard/Index"
+               data-path="dashboard"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                 <span class="material-symbols-outlined mr-3 text-[20px]">grid_view</span>
                 <span class="font-label-md text-label-md">Gösterge Paneli</span>
             </a>
-            <a class="flex items-center px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all group" data-path="forecasting" href="#">
+            <a href="/Forecasting/Index"
+               data-path="forecasting"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                 <span class="material-symbols-outlined mr-3 text-[20px]">timeline</span>
-                <span class="font-label-md text-label-md">Öngörü</span>
+                <span class="font-label-md text-label-md">Satış Tahmini</span>
             </a>
-            <a class="flex items-center px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all group" data-path="performance-prediction" href="#">
+            <a href="/BinaryClassification/Index"
+               data-path="binary-classification"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                 <span class="material-symbols-outlined mr-3 text-[20px]">query_stats</span>
-                <span class="font-label-md text-label-md">Performans</span>
+                <span class="font-label-md text-label-md">Satış Performansı / Binary Classification</span>
             </a>
-            <a class="flex items-center px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all group" data-path="anomaly-detection" href="#">
+            <a href="/MulticlassClassification/Index"
+               data-path="multiclass-classification"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <span class="material-symbols-outlined mr-3 text-[20px]">category</span>
+                <span class="font-label-md text-label-md">Satış Segmentasyonu / Multiclass Classification</span>
+            </a>
+            <a href="/Anomalies/Index"
+               data-path="anomaly"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                 <span class="material-symbols-outlined mr-3 text-[20px]">warning</span>
-                <span class="font-label-md text-label-md">Anomaliler</span>
+                <span class="font-label-md text-label-md">Anomali Analizi</span>
             </a>
-            <a class="flex items-center px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all group" data-path="city-clustering" href="#">
+            <a href="/Clusters/Index"
+               data-path="clusters"
+               class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                 <span class="material-symbols-outlined mr-3 text-[20px]">hub</span>
                 <span class="font-label-md text-label-md">Şehir Kümeleri</span>
             </a>
-            <a class="flex items-center px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all group" data-path="model-reports" href="#">
-                <span class="material-symbols-outlined mr-3 text-[20px]">assignment</span>
-                <span class="font-label-md text-label-md">Model Raporları</span>
-            </a>
         </nav>
+
         <footer class="p-4 border-t border-outline-variant/30 mt-auto">
             <div class="flex items-center justify-between px-2">
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full bg-on-tertiary-container"></div>
-                    <span class="text-[10px] font-label-md text-on-surface-variant uppercase tracking-widest">Sistem Aktif</span>
+                    <span class="text-[10px] font-label-md text-on-surface-variant uppercase tracking-widest">
+                        Sistem Aktif
+                    </span>
                 </div>
-                <span class="text-[10px] font-data-mono text-outline">v2.4.1-STABLE</span>
+
+                <span class="text-[10px] font-data-mono text-outline">
+                    ML.NET
+                </span>
             </div>
         </footer>
     </aside>
 
     <div class="pl-64 flex flex-col min-h-screen">
-        <header class="fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl z-40 flex items-center justify-between px-8 shadow-[0_1px_8px_rgba(0,0,0,0.02)]">
-            <div class="flex items-center gap-4 text-outline">
-                <span class="material-symbols-outlined cursor-pointer">search</span>
-                <span class="font-body-sm text-body-sm">/ tuşuna basarak ML içgörülerini arayın...</span>
-            </div><div class="flex items-center gap-6">
-                <div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container rounded-full">
-                    <span class="material-symbols-outlined text-[16px] text-on-tertiary-container">memory</span>
-                    <span class="text-[11px] font-label-md text-on-surface uppercase">ML.NET Aktif</span>
+        <header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 flex items-center justify-between px-8 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
+            <div class="flex items-center gap-3 text-outline">
+                <span class="material-symbols-outlined text-[20px]">search</span>
+                <span class="font-body-sm text-body-sm">
+                    ML içgörülerini keşfedin...
+                </span>
+            </div>
+            <div class="flex items-center gap-5">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-secondary/10 rounded-full">
+                    <span class="material-symbols-outlined text-[16px] text-secondary">memory</span>
+                    <span class="text-[11px] font-label-md text-secondary uppercase">
+                        ML.NET Aktif
+                    </span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
-                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer">
-                        <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-                    </div>
+                <span class="material-symbols-outlined text-on-surface-variant cursor-pointer">
+                    notifications
+                </span>
+                <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-white text-[18px]">person</span>
                 </div>
             </div>
         </header>
-       
         <main class="flex-1 pt-16 bg-surface-container-low min-h-[calc(100vh-64px)]">
             @RenderBody()
         </main>
-
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const path = window.location.pathname.toLowerCase();
+            document.querySelectorAll(".nav-link").forEach(link => {
+                const href = link.getAttribute("href")?.toLowerCase() || "";
+                if (path === href || (href !== "/" && path.startsWith(href))) {
+                    link.classList.remove(
+                        "text-on-surface-variant",
+                        "hover:bg-surface-container-high",
+                        "hover:text-on-surface"
+                    );
+                    link.classList.add(
+                        "bg-secondary-container",
+                        "text-on-secondary-container"
+                    );
+                }
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-
-@await RenderSectionAsync("Scripts", required: false)

@@ -7,18 +7,16 @@ namespace ECommerceSalesIntelligence.Controllers
     {
         private readonly ClusteringService _clusteringService;
 
-        public ClustersController(ClusteringService clusteringService)
+        public ClustersController(
+            ClusteringService clusteringService)
         {
             _clusteringService = clusteringService;
         }
 
-        // Clustering analizini çalıştırır ve sonuçları View'a gönderir.
-        public async Task<IActionResult> Index(int count = 4)
+        public async Task<IActionResult> Index(int count = 2)
         {
-            // Şehirleri K-Means algoritmasıyla kümelendirir.
+            // Şehirleri davranış özelliklerine göre kümeler
             var model = await _clusteringService.TrainAndClusterAsync(count);
-
-            // Kümeleme sonuçlarını sayfaya gönderir.
             return View(model);
         }
     }

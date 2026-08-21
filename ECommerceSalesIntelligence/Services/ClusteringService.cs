@@ -4,7 +4,6 @@ using ECommerceSalesIntelligence.Models;
 using ECommerceSalesIntelligence.Models.Cluster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
-using Microsoft.ML.Data;
 
 namespace ECommerceSalesIntelligence.Services
 {
@@ -16,426 +15,259 @@ namespace ECommerceSalesIntelligence.Services
         public ClusteringService(AppDbContext context)
         {
             _context = context;
-            _mlContext = new MLContext(seed: 42);
+            _mlContext = new MLContext(seed: 42); // Tekrarlanabilir ML sonuçları için seed
         }
 
-        // Şehirleri satış davranışlarına göre K-Means ile kümeler.
-        public async Task<List<ClusterResultViewModel>> TrainAndClusterAsync(int count = 4)
+        public async Task<List<ClusterResultViewModel>> TrainAndClusterAsync(int count = 2)
         {
-            // Geçerli satış kayıtlarını getir.
+            count = 2;
             var sales = await _context.SalesRecords
-                .AsNoTracking()
-                .Where(x =>
-                    !string.IsNullOrWhiteSpace(x.City) &&
-                    !string.IsNullOrWhiteSpace(x.CategoryName))
+                .AsNoTracking() // Sadece okuma yapılacağı için tracking kapatılır
+                .Where(x => !string.IsNullOrWhiteSpace(x.City) &&
+                            !string.IsNullOrWhiteSpace(x.CategoryName))
                 .ToListAsync();
 
-            if (!sales.Any())
-                throw new InvalidOperationException(
-                    "Kümeleme için kullanılabilecek satış verisi bulunamadı.");
+            if (!sales.Any()) throw new InvalidOperationException("Kümeleme için kullanılabilecek satış verisi bulunamadı.");
 
-            // Satışları şehir bazında grupla.
+            // Satışları şehirlere göre grupla
             var cityGroups = sales
                 .GroupBy(x => x.City.Trim())
                 .OrderBy(x => x.Key)
                 .ToList();
 
-            if (cityGroups.Count < count)
-                throw new InvalidOperationException(
-                    $"Kümeleme için en az {count} farklı şehir gereklidir.");
+            if (cityGroups.Count < count) throw new InvalidOperationException( $"Kümeleme için en az {count} farklı şehir gereklidir.");
 
-            // Her şehir için K-Means özelliklerini oluştur.
-            var inputs = cityGroups
-                .Select(BuildCityInput)
-                .ToList();
+            var inputs = cityGroups.Select(BuildCityInput).ToList();
 
-            var dataView = _mlContext.Data
-                .LoadFromEnumerable(inputs);
+            // Şehir özelliklerini ML.NET veri formatına dönüştür
+            var dataView = _mlContext.Data.LoadFromEnumerable(inputs);
 
-            // K-Means'te kullanılacak özellikleri birleştir.
+            // KMeans için kullanılacak özellikleri birleştir
             var pipeline = _mlContext.Transforms
                 .Concatenate(
                     "Features",
-                    nameof(SalesClusterInput.TotalQuantity),
-                    nameof(SalesClusterInput.AverageUnitPrice),
+                    nameof(SalesClusterInput.AverageDailyQuantity),
                     nameof(SalesClusterInput.AverageOrderAmount),
-                    nameof(SalesClusterInput.TotalRevenue),
-                    nameof(SalesClusterInput.AverageDiscountRate),
                     nameof(SalesClusterInput.CampaignRate),
-                    nameof(SalesClusterInput.RevenuePerQuantity),
+                    nameof(SalesClusterInput.AverageDiscountRate),
                     nameof(SalesClusterInput.CategoryCount),
                     nameof(SalesClusterInput.TopCategoryRate),
                     nameof(SalesClusterInput.CategoryDiversity))
-                .Append(
-                    _mlContext.Transforms.NormalizeMinMax(
-                        "Features"));
 
-            // Özellikleri normalize et.
+                // Özellikleri 0-1 aralığına getir
+                .Append(_mlContext.Transforms.NormalizeMinMax("Features"));
+
+            // Pipelineı eğit ve verileri dönüştür
             var transformedData = pipeline
                 .Fit(dataView)
                 .Transform(dataView);
 
-            // K-Means modelini oluştur.
-            var kMeans = _mlContext.Clustering.Trainers.KMeans(
-                featureColumnName: "Features",
-                numberOfClusters: count);
+            // KMeans kümeleme algoritmasını oluştur
+            var kMeans = _mlContext.Clustering.Trainers.KMeans(featureColumnName: "Features",numberOfClusters: count);
 
-            // Modeli eğit.
+            // KMeans modelini eğit
             var model = kMeans.Fit(transformedData);
 
-            // Şehirlerin kümesini tahmin et.
+            // Şehirlerin hangi kümeye ait olduğunu tahmin et
             var predictions = model.Transform(transformedData);
 
-            var predictionRows = _mlContext.Data
-                .CreateEnumerable<ClusterPrediction>(
-                    predictions,
-                    reuseRowObject: false)
-                .ToList();
+            // Tahmin sonuçlarını C# listesine dönüştür
+            var predictionRows = _mlContext.Data.CreateEnumerable<SalesClusterPrediction>(predictions,reuseRowObject: false).ToList();
 
-            // Ham K-Means küme sonuçlarını şehir indexleriyle eşleştir.
+            // Ham küme ID'lerini ve şehir indekslerini tut
             var rawClusters = new Dictionary<uint, List<int>>();
 
+            // Her şehrin hangi kümeye atandığını işle
             for (int i = 0; i < predictionRows.Count; i++)
             {
-                uint rawId =
-                    predictionRows[i].PredictedClusterId;
+                uint rawId = predictionRows[i].PredictedClusterId;
 
+                // Küme daha önce oluşturulmadıysa oluştur
                 if (!rawClusters.ContainsKey(rawId))
                     rawClusters[rawId] = new List<int>();
 
+                // Şehrin indeksini kümeye ekle
                 rawClusters[rawId].Add(i);
             }
 
-            // Kümeleri satış hacmi ve ekonomik değerlerine göre sırala.
+            // Kümeleri belirli kriterlere göre sırala
             var orderedClusters = rawClusters
                 .Select(x => new
                 {
                     RawId = x.Key,
                     Indexes = x.Value,
 
-                    Quantity = x.Value.Average(
-                        i => inputs[i].TotalQuantity),
+                    // Kümenin ortalama kampanya oranı
+                    CampaignRate = x.Value.Average(
+                        i => inputs[i].CampaignRate),
 
-                    Revenue = x.Value.Average(
-                        i => inputs[i].TotalRevenue),
+                    // Kümenin ortalama günlük satış adedi
+                    AverageDailyQuantity = x.Value.Average(
+                        i => inputs[i].AverageDailyQuantity),
 
-                    OrderAmount = x.Value.Average(
-                        i => inputs[i].AverageOrderAmount),
-
-                    Campaign = x.Value.Average(
-                        i => inputs[i].CampaignRate)
+                    // Kümenin ortalama sipariş tutarı
+                    AverageOrderAmount = x.Value.Average(
+                        i => inputs[i].AverageOrderAmount)
                 })
-                .OrderByDescending(x => x.Quantity)
-                .ThenByDescending(x => x.Revenue)
-                .ThenByDescending(x => x.OrderAmount)
-                .ThenByDescending(x => x.Campaign)
+
+                // Önce kampanya oranına göre sırala
+                .OrderBy(x => x.CampaignRate)
+
+                // Sonra satış miktarına göre büyükten küçüğe sırala
+                .ThenByDescending(x => x.AverageDailyQuantity)
+
+                // Son olarak sipariş tutarına göre sırala
+                .ThenByDescending(x => x.AverageOrderAmount)
+
                 .ToList();
 
-            // Ham K-Means ID'sini UI için 1-2-3-4 şeklinde düzenle.
+            // ML.NET'in ham küme ID'lerini 1,2 gibi anlaşılır ID'lere dönüştür
             var clusterIdMap = new Dictionary<uint, int>();
 
             for (int i = 0; i < orderedClusters.Count; i++)
-            {
-                clusterIdMap[
-                    orderedClusters[i].RawId] = i + 1;
-            }
+                clusterIdMap[orderedClusters[i].RawId] = i + 1;
 
-            // UI sonuçlarını oluştur.
+            // Sonuçların tutulacağı liste
             var results = new List<ClusterResultViewModel>();
 
+            // Her şehir için sonuç oluştur
             for (int i = 0; i < inputs.Count; i++)
             {
                 var input = inputs[i];
 
-                var rawClusterId =
-                    predictionRows[i].PredictedClusterId;
+                // Şehrin ML tarafından verilen ham küme ID'si
+                uint rawClusterId = predictionRows[i].PredictedClusterId;
 
-                var cityRecords =
-                    cityGroups[i].ToList();
+                // Şehre ait tüm satış kayıtlarını al
+                var cityRecords = cityGroups[i].ToList();
 
-                // Şehrin toplam satış miktarı.
-                int cityTotalQuantity =
-                    cityRecords.Sum(x => x.Quantity);
+                // Şehrin toplam satış miktarını hesapla
+                int cityTotalQuantity = cityRecords.Sum(x => x.Quantity);
 
-                // Şehrin kategori dağılımını oluştur.
+                // Şehirdeki kategorilerin dağılımını hesapla
                 var categoryDistribution = cityRecords
                     .GroupBy(x => x.CategoryName.Trim())
                     .Select(g => new CategoryDistributionSummaryViewModel
                     {
-                        CategoryName = g.Key,
+                        CategoryName = g.Key, // Kategori adı
 
-                        Quantity = g.Sum(x => x.Quantity),
+                        Quantity = g.Sum(x => x.Quantity), // Kategori satış adedi
 
                         Revenue = (float)g.Sum(
-                            x => (double)x.TotalAmount),
+                            x => (double)x.TotalAmount), // Kategori cirosu
 
+                        // Kategorinin toplam satış içindeki oranı
                         Percentage = cityTotalQuantity > 0
                             ? (float)g.Sum(x => x.Quantity)
-                              / cityTotalQuantity
-                              * 100f
+                              / cityTotalQuantity * 100f
                             : 0f
                     })
-                    .OrderByDescending(x => x.Quantity)
+                    .OrderByDescending(x => x.Quantity) // En çok satılan kategori üstte
                     .ToList();
 
-                // En baskın kategoriyi bul.
-                var topCategory =
-                    categoryDistribution.FirstOrDefault();
+                var topCategory = categoryDistribution.FirstOrDefault();
 
-                // Gerçek şehir sonucunu oluştur.
                 results.Add(new ClusterResultViewModel
                 {
-                    // Düzenlenmiş küme numarası.
-                    ClusterId =
-                        (uint)clusterIdMap[rawClusterId],
-
-                    // Şehir.
+                    ClusterId = (uint)clusterIdMap[rawClusterId],
                     City = input.City,
+                    TotalQuantity = cityTotalQuantity,
 
-                    // Gerçek satış miktarı.
-                    TotalQuantity =
-                        cityTotalQuantity,
+                    AverageUnitPrice = cityRecords.Count > 0? (float)cityRecords.Average( x => (double)x.UnitPrice) : 0f,
 
-                    // Gerçek ortalama birim fiyat.
-                    AverageUnitPrice =
-                        cityRecords.Count > 0
-                            ? (float)cityRecords.Average(
-                                x => (double)x.UnitPrice)
-                            : 0f,
+                    TotalSalesAmount = (float)cityRecords.Sum(x => (double)x.TotalAmount),
 
-                    // Toplam satış tutarı.
-                    TotalSalesAmount =
-                        (float)cityRecords.Sum(
-                            x => (double)x.TotalAmount),
+                    AverageOrderAmount = cityRecords.Count > 0 ? (float)cityRecords.Average(x => (double)x.TotalAmount) : 0f,
 
-                    // Ortalama satış tutarı.
-                    AverageOrderAmount =
-                        cityRecords.Count > 0
-                            ? (float)cityRecords.Average(
-                                x => (double)x.TotalAmount)
-                            : 0f,
+                    TotalRevenue = (float)cityRecords.Sum(x => (double)x.TotalAmount),
 
-                    // Toplam şehir cirosu.
-                    TotalRevenue =
-                        (float)cityRecords.Sum(
-                            x => (double)x.TotalAmount),
+                    CampaignRate = cityRecords.Count > 0? (float)cityRecords.Count(x => x.IsCampaign) / cityRecords.Count: 0f,
 
-                    // Kampanya oranı.
-                    CampaignRate =
-                        cityRecords.Count > 0
-                            ? (float)cityRecords.Count(
-                                x => x.IsCampaign)
-                              / cityRecords.Count
-                            : 0f,
+                    CategoryCount = categoryDistribution.Count,
 
-                    // Kategori sayısı.
-                    CategoryCount =
-                        categoryDistribution.Count,
+                    TopCategory = topCategory?.CategoryName ?? "-",
 
-                    // En baskın kategori.
-                    TopCategory =
-                        topCategory?.CategoryName ?? "-",
+                    TopCategoryRate = topCategory != null && cityTotalQuantity > 0 ? (float)topCategory.Quantity / cityTotalQuantity : 0f,
 
-                    // Baskın kategori satış oranı.
-                    TopCategoryRate =
-                        topCategory != null &&
-                        cityTotalQuantity > 0
-                            ? (float)topCategory.Quantity
-                              / cityTotalQuantity
-                            : 0f,
-
-                    // Kategori çeşitliliği.
-                    CategoryDiversity =
-                        input.CategoryDiversity,
-
-                    // Kategori detayları.
-                    CategoryDistribution =
-                        categoryDistribution
+                    CategoryDiversity = input.CategoryDiversity,
+                    CategoryDistribution = categoryDistribution
                 });
             }
-
             return results;
         }
 
-        // Şehir için K-Means özelliklerini hesaplar.
-        private SalesClusterInput BuildCityInput(
-            IGrouping<string, SalesRecord> city)
+        private SalesClusterInput BuildCityInput(IGrouping<string, SalesRecord> city)
         {
             var records = city.ToList();
+            int totalQuantity = records.Sum(x => x.Quantity);
 
-            // Toplam satış miktarı.
-            int totalQuantity =
-                records.Sum(x => x.Quantity);
+            int activeDays = records .Select(x => x.OrderDate.Date).Distinct().Count();
 
-            // Toplam ciro.
-            double totalRevenue =
-                records.Sum(x => (double)x.TotalAmount);
+            float averageDailyQuantity = activeDays > 0 ? (float)totalQuantity / activeDays : 0f;
 
-            // Ortalama birim fiyat.
-            double averageUnitPrice =
-                records.Count > 0
-                    ? records.Average(
-                        x => (double)x.UnitPrice)
-                    : 0d;
+            double averageOrderAmount = records.Count > 0 ? records.Average(x => (double)x.TotalAmount) : 0d;
 
-            // Ortalama satış tutarı.
-            double averageOrderAmount =
-                records.Count > 0
-                    ? records.Average(
-                        x => (double)x.TotalAmount)
-                    : 0d;
+            float averageDiscountRate = records.Count > 0 ? (float)records.Average( x => (double)x.DiscountRate) : 0f;
 
-            // Ortalama indirim oranı.
-            float averageDiscountRate =
-                records.Count > 0
-                    ? (float)records.Average(
-                        x => (double)x.DiscountRate)
-                    : 0f;
+            float campaignRate = records.Count > 0 ? (float)records.Count(x => x.IsCampaign) / records.Count : 0f;
 
-            // Kampanyalı satış oranı.
-            float campaignRate =
-                records.Count > 0
-                    ? (float)records.Count(
-                        x => x.IsCampaign)
-                      / records.Count
-                    : 0f;
-
-            // Satış başına üretilen ciro.
-            float revenuePerQuantity =
-                totalQuantity > 0
-                    ? (float)(totalRevenue / totalQuantity)
-                    : 0f;
-
-            // Kategorileri satış miktarına göre grupla.
+            // Şehirdeki kategorileri satış miktarına göre grupla
             var categoryGroups = records
                 .GroupBy(x => x.CategoryName.Trim())
                 .Select(g => new
                 {
                     Category = g.Key,
-                    Quantity = g.Sum(x => x.Quantity)
+                    Quantity = g.Sum(x => x.Quantity) 
                 })
                 .OrderByDescending(x => x.Quantity)
                 .ToList();
 
-            // Farklı kategori sayısı.
-            float categoryCount =
-                categoryGroups.Count;
+            float categoryCount = categoryGroups.Count;
 
-            // En çok satan kategorinin miktarı.
-            int topCategoryQuantity =
-                categoryGroups.Count > 0
-                    ? categoryGroups[0].Quantity
-                    : 0;
+            int topCategoryQuantity = categoryGroups.Count > 0 ? categoryGroups[0].Quantity : 0;
 
-            // En baskın kategorinin satış oranı.
-            float topCategoryRate =
-                totalQuantity > 0
-                    ? (float)topCategoryQuantity
-                      / totalQuantity
-                    : 0f;
+            float topCategoryRate = totalQuantity > 0  ? (float)topCategoryQuantity / totalQuantity : 0f;
 
-            // Kategori çeşitliliğini hesapla.
-            double categoryDiversity =
-                CalculateEntropy(
-                    categoryGroups.Select(
-                        x => x.Quantity),
-                    totalQuantity);
+            double categoryDiversity = CalculateEntropy(categoryGroups.Select(x => x.Quantity), totalQuantity);
 
+            // ML.NET için şehir özelliklerini hazırla
             return new SalesClusterInput
             {
                 City = city.Key,
 
-                // Log dönüşümü ile satış hacmini dengeler.
-                TotalQuantity =
-                    (float)Math.Log(
-                        1d + Math.Max(
-                            0,
-                            totalQuantity)),
+                // Büyük değerlerin etkisini azaltmak için log dönüşümü
+                AverageDailyQuantity = (float)Math.Log( 1d + Math.Max(0d, averageDailyQuantity)),
 
-                // Log dönüşümü ile fiyatı dengeler.
-                AverageUnitPrice =
-                    (float)Math.Log(
-                        1d + Math.Max(
-                            0d,
-                            averageUnitPrice)),
+                // Sipariş tutarında log dönüşümü
+                AverageOrderAmount = (float)Math.Log( 1d + Math.Max(0d, averageOrderAmount)),
 
-                // Log dönüşümü ile sepet değerini dengeler.
-                AverageOrderAmount =
-                    (float)Math.Log(
-                        1d + Math.Max(
-                            0d,
-                            averageOrderAmount)),
-
-                // Log dönüşümü ile ciroyu dengeler.
-                TotalRevenue =
-                    (float)Math.Log(
-                        1d + Math.Max(
-                            0d,
-                            totalRevenue)),
-
-                // İndirim oranı.
-                AverageDiscountRate =
-                    averageDiscountRate,
-
-                // Kampanya oranı.
-                CampaignRate =
-                    campaignRate,
-
-                // Satış başına ciro.
-                RevenuePerQuantity =
-                    (float)Math.Log(
-                        1d + Math.Max(
-                            0f,
-                            revenuePerQuantity)),
-
-                // Kategori sayısı.
-                CategoryCount =
-                    categoryCount,
-
-                // Baskın kategori oranı.
-                TopCategoryRate =
-                    topCategoryRate,
-
-                // Kategori çeşitliliği.
-                CategoryDiversity =
-                    (float)categoryDiversity
+                CampaignRate = campaignRate,
+                AverageDiscountRate = averageDiscountRate,
+                CategoryCount = categoryCount,
+                TopCategoryRate = topCategoryRate,
+                CategoryDiversity = (float)categoryDiversity
             };
         }
 
-        // Kategori çeşitliliğini Shannon Entropy ile hesaplar.
-        private static double CalculateEntropy(
-            IEnumerable<int> quantities,
-            double totalQuantity)
+        private static double CalculateEntropy(IEnumerable<int> quantities, double totalQuantity)
         {
+            // Toplam satış yoksa entropy hesaplanamaz
             if (totalQuantity <= 0)
                 return 0d;
 
             double entropy = 0d;
 
+            // Her kategorinin satış oranını hesapla
             foreach (int quantity in quantities)
             {
                 double probability =
                     (double)quantity / totalQuantity;
 
+                // Olasılık sıfırdan büyükse entropy'ye ekle
                 if (probability > 0d)
-                {
-                    entropy -=
-                        probability *
-                        Math.Log(probability);
-                }
+                    entropy -= probability * Math.Log(probability);
             }
-
             return entropy;
-        }
-
-        // ML.NET tahmin sonucunu tutar.
-        private class ClusterPrediction
-        {
-            [ColumnName("PredictedLabel")]
-            public uint PredictedClusterId { get; set; }
-
-            public float[] Score { get; set; } =
-                Array.Empty<float>();
         }
     }
 }

@@ -17,10 +17,10 @@ namespace ECommerceSalesIntelligence.Services
             _mlContext = mlContext;
         }
 
-        /// Şehir ve ürün bazında gelecek ay satış performansını Low, Medium veya High sınıfına ayırır.
+        /// Şehir ve ürün bazında gelecek ay satış performansını Low, Medium veya High sınıfına ayırır
         public MulticlassClassificationViewModel GetMulticlassDashboardData()
         {
-            // SQL verileri şehir, ürün ve ay bazında aylık satışlara dönüştürülür.
+            // SQL verileri şehir, ürün ve ay bazında aylık satışlara dönüştürülür
             var monthlySales = _context.SalesRecords
                 .AsNoTracking()
                 .Select(x => new
@@ -55,7 +55,7 @@ namespace ECommerceSalesIntelligence.Services
             if (!monthlySales.Any())
                 return new MulticlassClassificationViewModel();
 
-            // En az dört aylık geçmişi bulunan şehir-ürün grupları kullanılır.
+            // En az dört aylık geçmişi bulunan şehir-ürün grupları kullanılır
             var groups = monthlySales
                 .GroupBy(x => new { x.City, x.ProductName })
                 .Where(g => g.Count() >= 4)
@@ -64,7 +64,7 @@ namespace ECommerceSalesIntelligence.Services
             if (!groups.Any())
                 return new MulticlassClassificationViewModel();
 
-            // Modelin eğitiminde kullanılacak geçmiş örnekler hazırlanır.
+            // Modelin eğitiminde kullanılacak geçmiş örnekler hazırlanır
             var trainingData = new List<SalesMulticlassInput>();
 
             foreach (var group in groups)
@@ -74,7 +74,7 @@ namespace ECommerceSalesIntelligence.Services
                     .ThenBy(x => x.Month)
                     .ToList();
 
-                // En az üç geçmiş ay kullanılarak sonraki ay hedef oluşturulur.
+                // En az üç geçmiş ay kullanılarak sonraki ay hedef oluşturulur
                 for (int i = 3; i < months.Count; i++)
                 {
                     var threeMonthsAgo = months[i - 3];
@@ -92,11 +92,11 @@ namespace ECommerceSalesIntelligence.Services
                         targetMonth.Month,
                         1);
 
-                    // Arada eksik ay varsa bu örnek eğitimden çıkarılır.
+                    // Arada eksik ay varsa bu örnek eğitimden çıkarılır
                     if (actualTargetDate != expectedTargetDate)
                         continue;
 
-                    // Son üç ayın ortalama satış değeri hesaplanır.
+                    // Son üç ayın ortalama satış değeri hesaplanır
                     float average = (
                         threeMonthsAgo.TotalQuantity +
                         twoMonthsAgo.TotalQuantity +
@@ -105,7 +105,7 @@ namespace ECommerceSalesIntelligence.Services
                     if (average <= 0)
                         continue;
 
-                    // Geçmiş satış davranışını açıklayan özellikler hesaplanır.
+                    // Geçmiş satış davranışını açıklayan özellikler hesaplanır
                     float lastMonthGrowthRate = SafeRate(lastMonth.TotalQuantity, twoMonthsAgo.TotalQuantity); // Son ayın bir önceki aya göre büyüme oranı
 
                     float twoMonthGrowthRate = SafeRate(twoMonthsAgo.TotalQuantity, threeMonthsAgo.TotalQuantity); // İki ay önceki ayın bir önceki aya göre büyüme oranı
@@ -114,7 +114,7 @@ namespace ECommerceSalesIntelligence.Services
 
                     float trendSlope = CalculateTrendSlope(threeMonthsAgo.TotalQuantity, twoMonthsAgo.TotalQuantity, lastMonth.TotalQuantity); // Trend eğimi
 
-                    // Gerçek hedef satış yalnızca sınıf etiketi oluşturmak için kullanılır.
+                    // Gerçek hedef satış yalnızca sınıf etiketi oluşturmak için kullanılır
                     float targetPerformanceRatio = targetMonth.TotalQuantity / average;
 
                     trainingData.Add(new SalesMulticlassInput
@@ -141,44 +141,44 @@ namespace ECommerceSalesIntelligence.Services
             if (!trainingData.Any())
                 return new MulticlassClassificationViewModel();
 
-            // Performans oranları sıralanarak veri dağılımı elde edilir.
+            // Performans oranları sıralanarak veri dağılımı elde edilir
             var performanceValues = trainingData.Select(x => x.TargetPerformanceRatio).OrderBy(x => x).ToList();
 
-            // P33 ve P66 değerleri, performans oranlarının sıralı dağılımında %33 ve %66 noktalarını temsil eder.
-            // Bu noktalar, veriyi üç eşit parçaya böler ve her parçaya bir sınıf atanır: Low, Medium ve High.
+            // P33 ve P66 değerleri, performans oranlarının sıralı dağılımında %33 ve %66 noktalarını temsil eder
+            // Bu noktalar, veriyi üç eşit parçaya böler ve her parçaya bir sınıf atanır: Low, Medium ve High
             double p33 = GetPercentile(performanceValues, 0.3333);
             double p66 = GetPercentile(performanceValues, 0.6667);
 
-            // Her eğitim örneği Low, Medium veya High sınıfına atanır.
+            // Her eğitim örneği Low, Medium veya High sınıfına atanır
             foreach (var item in trainingData)
             {
                 item.Label = item.TargetPerformanceRatio < p33 ? "Low" : item.TargetPerformanceRatio < p66 ? "Medium" : "High";
             }
 
-            // Her sınıftaki örnek sayısı hesaplanır.
+            // Her sınıftaki örnek sayısı hesaplanır
             int lowCount = trainingData.Count(x => x.Label == "Low");
             int mediumCount = trainingData.Count(x => x.Label == "Medium");
             int highCount = trainingData.Count(x => x.Label == "High");
 
-            // Üç sınıfın da oluşması modelin eğitimi için kontrol edilir.
+            // Üç sınıfın da oluşması modelin eğitimi için kontrol edilir
             if (lowCount == 0 || mediumCount == 0 || highCount == 0)
             {
                 throw new InvalidOperationException("Low, Medium ve High sınıflarının üçü de oluşmadı. " + $"Low sınırı: {p33:N2}, High sınırı: {p66:N2}");
             }
 
-            // Eğitim listesi ML.NET IDataView yapısına dönüştürülür.
+            // Eğitim listesi ML.NET IDataView yapısına dönüştürülür
             IDataView dataView = _mlContext.Data.LoadFromEnumerable(trainingData);
 
-            // Veriler eğitim ve test olarak ikiye ayrılır.
-            var split = _mlContext.Data.TrainTestSplit(dataView, testFraction: 0.20, seed: 42); // testFraction, verinin %20'sinin test seti olarak ayrılacağını belirtir.
-                                                                                                //seed, rastgele bölme işleminin tekrarlanabilir olmasını sağlar.
-                                                                                                //42 olmasının sebebi, 42 popüler bir "evrensel cevap" olarak kabul edilir ve rastgele sayı üretiminde sıkça kullanılır.
+            // Veriler eğitim ve test olarak ikiye ayrılır
+            var split = _mlContext.Data.TrainTestSplit(dataView, testFraction: 0.20, seed: 42); // testFraction, verinin %20'sinin test seti olarak ayrılacağını belirtir
+                                                                                                //seed, rastgele bölme işleminin tekrarlanabilir olmasını sağlar
+                                                                                                //42 olmasının sebebi, 42 popüler bir "evrensel cevap" olarak kabul edilir ve rastgele sayı üretiminde sıkça kullanılır
 
-            // Eğitim ve test kayıtlarının sayısı belirlenir.
+            // Eğitim ve test kayıtlarının sayısı belirlenir
             int trainCount = _mlContext.Data.CreateEnumerable<SalesMulticlassInput>(split.TrainSet, reuseRowObject: false).Count(); 
             int testCount = _mlContext.Data.CreateEnumerable<SalesMulticlassInput>(split.TestSet, reuseRowObject: false).Count(); 
 
-            // Kategorik şehir ve ürün bilgileri sayısal özelliklere dönüştürülür.
+            // Kategorik şehir ve ürün bilgileri sayısal özelliklere dönüştürülür
             var pipeline = _mlContext.Transforms.Categorical.OneHotEncoding(
                     outputColumnName: "CityEncoded",
                     inputColumnName: nameof(SalesMulticlassInput.City))
@@ -203,23 +203,23 @@ namespace ECommerceSalesIntelligence.Services
                     "CityEncoded",
                     "ProductEncoded",
                     "NumericFeatures"))
-                // Low, Medium ve High metinleri modelin anlayacağı key değerlerine çevrilir.
+                // Low, Medium ve High metinleri modelin anlayacağı key değerlerine çevrilir
                 .Append(_mlContext.Transforms.Conversion.MapValueToKey(
                     outputColumnName: "LabelKey",
                     inputColumnName: nameof(SalesMulticlassInput.Label)))
-                // Üç sınıflı tahmin için Maximum Entropy modeli kullanılır.
+                // Üç sınıflı tahmin için Maximum Entropy modeli kullanılır
                 .Append(_mlContext.MulticlassClassification.Trainers.LbfgsMaximumEntropy(
                     labelColumnName: "LabelKey",
                     featureColumnName: "Features"))
-                // Tahmin edilen key tekrar Low/Medium/High değerine çevrilir.
+                // Tahmin edilen key tekrar Low/Medium/High değerine çevrilir
                 .Append(_mlContext.Transforms.Conversion.MapKeyToValue(
                     outputColumnName: "PredictedLabel",
                     inputColumnName: "PredictedLabel"));
 
-            // Model yalnızca eğitim seti ile eğitilir.
+            // Model yalnızca eğitim seti ile eğitilir
             var model = pipeline.Fit(split.TrainSet);
 
-            // Test seti modelden geçirilerek performans ölçülür.
+            // Test seti modelden geçirilerek performans ölçülür
             var transformedTest = model.Transform(split.TestSet);
 
             var metrics = _mlContext.MulticlassClassification.Evaluate(
@@ -227,12 +227,12 @@ namespace ECommerceSalesIntelligence.Services
                 labelColumnName: "LabelKey",
                 predictedLabelColumnName: "PredictedLabel");
 
-            // Tek tek şehir-ürün tahminleri oluşturmak için prediction engine hazırlanır.
+            // Tek tek şehir-ürün tahminleri oluşturmak için prediction engine hazırlanır
             var predictionEngine = _mlContext.Model.CreatePredictionEngine<
                 SalesMulticlassInput,
                 SalesMulticlassPrediction>(model);
 
-            // Her şehir-ürünün son üç aylık bilgisi alınarak gelecek ay girdisi oluşturulur.
+            // Her şehir-ürünün son üç aylık bilgisi alınarak gelecek ay girdisi oluşturulur
             var latestInputs = new List<SalesMulticlassInput>();
 
             foreach (var group in groups)
@@ -269,7 +269,7 @@ namespace ECommerceSalesIntelligence.Services
                     lastMonth.Month,
                     1);
 
-                // Son üç ay ardışık değilse gelecek ay tahmini oluşturulmaz.
+                // Son üç ay ardışık değilse gelecek ay tahmini oluşturulmaz
                 if (secondActual != secondExpected || thirdActual != thirdExpected)
                     continue;
 
@@ -306,14 +306,14 @@ namespace ECommerceSalesIntelligence.Services
                         lastMonth.TotalQuantity),
                     TargetMonthNumber = nextMonth.Month,
                     TargetMonth = nextMonth.ToString("yyyy-MM"),
-                    // Gerçek gelecek ay satışı tahmin aşamasında bilinmez.
+                    // Gerçek gelecek ay satışı tahmin aşamasında bilinmez
                     TargetQuantity = 0,
                     TargetPerformanceRatio = 0,
                     Label = string.Empty
                 });
             }
 
-            // Gelecek ay için Low/Medium/High tahminleri oluşturulur.
+            // Gelecek ay için Low/Medium/High tahminleri oluşturulur
             var predictions = new List<MulticlassPredictionViewModel>();
 
             foreach (var item in latestInputs)
@@ -340,7 +340,7 @@ namespace ECommerceSalesIntelligence.Services
                 });
             }
 
-            // Tahminlerin hangi gelecek ay için yapıldığı belirlenir.
+            // Tahminlerin hangi gelecek ay için yapıldığı belirlenir
             string nextMonthLabel = latestInputs
                 .Select(x => x.TargetMonth)
                 .OrderByDescending(x => x)
@@ -367,7 +367,7 @@ namespace ECommerceSalesIntelligence.Services
             };
         }
 
-        // İki değer arasındaki büyüme oranını hesaplar.
+        // İki değer arasındaki büyüme oranını hesaplar
         private static float SafeRate(float current, float previous)
         {
             if (Math.Abs(previous) < 0.0001f)
@@ -376,13 +376,13 @@ namespace ECommerceSalesIntelligence.Services
             return (current - previous) / previous;
         }
 
-        // Üç aylık satış değerlerinden basit trend eğimi hesaplar.
+        // Üç aylık satış değerlerinden basit trend eğimi hesaplar
         private static float CalculateTrendSlope(float first, float second, float third)
         {
             return ((second - first) + (third - second)) / 2f;
         }
 
-        // Verilen yüzdelik değerin karşılığını sıralı veri üzerinden hesaplar.
+        // Verilen yüzdelik değerin karşılığını sıralı veri üzerinden hesaplar
         private static double GetPercentile(List<float> values, double percentile)
         {
             if (values.Count == 0)
@@ -403,7 +403,7 @@ namespace ECommerceSalesIntelligence.Services
             return values[lower] + (values[upper] - values[lower]) * fraction;
         }
 
-        // ML.NET skorlarını Softmax mantığıyla yaklaşık güven değerine dönüştürür.
+        // ML.NET skorlarını Softmax mantığıyla yaklaşık güven değerine dönüştürür
         private static float GetConfidence(float[] scores)
         {
             if (scores == null || scores.Length == 0)

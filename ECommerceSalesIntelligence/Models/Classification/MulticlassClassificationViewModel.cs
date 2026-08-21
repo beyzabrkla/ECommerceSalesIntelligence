@@ -7,7 +7,7 @@ namespace ECommerceSalesIntelligence.Models
         public MulticlassClassificationMetrics? Metrics { get; set; }
         public List<MulticlassPredictionViewModel> Predictions { get; set; } = new();
 
-        // P33 ve P66, performans oranlarının veri dağılımından hesaplanan sınırlardır.
+        // P33 ve P66, performans oranlarının veri dağılımından hesaplanan sınırlardır
         public double P33 { get; set; }
         public double P66 { get; set; }
 
@@ -30,19 +30,11 @@ namespace ECommerceSalesIntelligence.Models
         public string City { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
 
-        // Tahmin edilen sınıf için karşılaştırma amacıyla son ay satışı gösterilir.
+        // Tahmin edilen sınıf için karşılaştırma amacıyla son ay satışı gösterilir
         public float LastMonthSales { get; set; }
-
-        // Son üç ayın ortalama satış miktarıdır.
         public float Average3 { get; set; }
-
-        // Modelin tahmin sınıfına duyduğu yaklaşık güven seviyesidir.
         public float Confidence { get; set; }
-
-        // Modelin tahmin ettiği sınıf: Low, Medium veya High.
         public string PredictedClass { get; set; } = string.Empty;
-
-        // Kullanıcı arayüzünde gösterilecek Türkçe sınıf açıklamasıdır.
         public string DemandCategory { get; set; } = string.Empty;
     }
 }

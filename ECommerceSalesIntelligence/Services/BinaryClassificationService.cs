@@ -13,10 +13,10 @@ namespace ECommerceSalesIntelligence.Services
         private readonly MLContext _mlContext;
         private readonly IMemoryCache _memoryCache;
 
-        // Cache süresi ve eşik değişikliklerini ayırt etmek için versiyonlu key.
+        // Cache süresi ve eşik değişikliklerini ayırt etmek için versiyonlu key
         private const string CacheKey = "BinaryClassificationDashboardCache_v12_650";
 
-        // 650 ve üzeri AŞTI, 650 altı ALTINDA olarak etiketlenir.
+        // 650 ve üzeri AŞTI, 650 altı ALTINDA olarak etiketlenir
         private const float ClassificationThreshold = 650f;
 
         public BinaryClassificationService(
@@ -29,10 +29,10 @@ namespace ECommerceSalesIntelligence.Services
             _memoryCache = memoryCache;
         }
 
-        // Dashboard için eğitim, test ve gelecek ay sınıflandırma sonuçlarını oluşturur.
+        // Dashboard için eğitim, test ve gelecek ay sınıflandırma sonuçlarını oluşturur
         public ClassificationDashboardViewModel GetBinaryDashboardData()
         {
-            // Cache varsa modeli tekrar eğitmeden mevcut sonucu kullanır.
+            // Cache varsa modeli tekrar eğitmeden mevcut sonucu kullanır
             if (_memoryCache.TryGetValue(
                 CacheKey,
                 out ClassificationDashboardViewModel? cachedModel) &&
@@ -58,7 +58,7 @@ namespace ECommerceSalesIntelligence.Services
                 return EmptyResult("Veritabanında satış verisi bulunamadı.");
             }
 
-            // Satışları şehir, ürün ve ay bazında toplar.
+            // Satışları şehir, ürün ve ay bazında toplar
             var rawMonthlySales = salesRecords
                 .GroupBy(x => new
                 {
@@ -88,7 +88,7 @@ namespace ECommerceSalesIntelligence.Services
                 return EmptyResult("Aylık satış verisi oluşturulamadı.");
             }
 
-            // En az dört aylık geçmişi olan şehir-ürün gruplarını seçer.
+            // En az dört aylık geçmişi olan şehir-ürün gruplarını seçer
             var productGroups = rawMonthlySales
                 .GroupBy(x => new { x.City, x.ProductName })
                 .Where(g => g.Count() >= 4)
@@ -100,7 +100,7 @@ namespace ECommerceSalesIntelligence.Services
                     "En az 4 aylık satış geçmişi bulunan şehir-ürün grubu bulunamadı.");
             }
 
-            // Geçmiş satışlardan modelin öğreneceği eğitim kayıtlarını oluşturur.
+            // Geçmiş satışlardan modelin öğreneceği eğitim kayıtlarını oluşturur
             var trainingData = new List<SalesClassificationInput>();
 
             foreach (var group in productGroups)
@@ -135,7 +135,7 @@ namespace ECommerceSalesIntelligence.Services
 
                     float sales3 = monthlyData.TryGetValue(month3, out var value3) ? value3 : 0f;
 
-                    // Hedef ayın gerçek satışı yoksa eğitim kaydı oluşturulmaz.
+                    // Hedef ayın gerçek satışı yoksa eğitim kaydı oluşturulmaz
                     if (!monthlyData.TryGetValue(currentDate, out var targetQuantity))
                     {
                         currentDate = currentDate.AddMonths(1);
@@ -145,7 +145,7 @@ namespace ECommerceSalesIntelligence.Services
                     float lastThreeMonthsSales = sales1 + sales2 + sales3;
                     float threeMonthAverage = lastThreeMonthsSales / 3f;
 
-                    // Gerçek hedef satış 650 veya üzerindeyse pozitif sınıf oluşturulur.
+                    // Gerçek hedef satış 650 veya üzerindeyse pozitif sınıf oluşturulur
                     bool label = targetQuantity >= ClassificationThreshold;
 
                     trainingData.Add(new SalesClassificationInput
@@ -164,7 +164,7 @@ namespace ECommerceSalesIntelligence.Services
                 }
             }
 
-            // Eğitim verisindeki iki sınıfın dağılımını hesaplar.
+            // Eğitim verisindeki iki sınıfın dağılımını hesaplar
             int positiveCount = trainingData.Count(x => x.Label);
             int negativeCount = trainingData.Count(x => !x.Label);
 
@@ -189,16 +189,16 @@ namespace ECommerceSalesIntelligence.Services
                     $"Toplam: {trainingData.Count}, EVET: {positiveCount}, HAYIR: {negativeCount}");
             }
 
-            // Eğitim listesini ML.NET'in IDataView formatına çevirir.
+            // Eğitim listesini ML.NET'in IDataView formatına çevirir
             IDataView data = _mlContext.Data.LoadFromEnumerable(trainingData);
 
-            // Veriyi %80 eğitim, %20 test olacak şekilde ayırır.
+            // Veriyi %80 eğitim, %20 test olacak şekilde ayırır
             var split = _mlContext.Data.TrainTestSplit(
                 data,
                 testFraction: 0.20,
                 seed: 42);
 
-            // Şehir, ürün ve geçmiş satış değerlerini modele özellik olarak verir.
+            // Şehir, ürün ve geçmiş satış değerlerini modele özellik olarak verir
             var pipeline = _mlContext.Transforms.Categorical.OneHotEncoding(
                     outputColumnName: "CityEncoded",
                     inputColumnName: nameof(SalesClassificationInput.City))
@@ -217,22 +217,22 @@ namespace ECommerceSalesIntelligence.Services
                     labelColumnName: "Label",
                     featureColumnName: "Features"));
 
-            // Logistic Regression modelini eğitim verisiyle eğitir.
+            // Logistic Regression modelini eğitim verisiyle eğitir
             ITransformer model = pipeline.Fit(split.TrainSet);
 
-            // Modelin test verisindeki başarısını ölçer.
+            // Modelin test verisindeki başarısını ölçer
             IDataView testResult = model.Transform(split.TestSet);
 
             var metrics = _mlContext.BinaryClassification.Evaluate(
                 testResult,
                 labelColumnName: "Label");
 
-            // Eğitilmiş modelden tek tek sınıflandırma sonucu üretmek için engine oluşturur.
+            // Eğitilmiş modelden tek tek sınıflandırma sonucu üretmek için engine oluşturur
             var predictionEngine = _mlContext.Model.CreatePredictionEngine<
                 SalesClassificationInput,
                 SalesClassificationPrediction>(model);
 
-            // Gelecek ay için mevcut son üç aylık satış özelliklerini hazırlar.
+            // Gelecek ay için mevcut son üç aylık satış özelliklerini hazırlar
             var futureInputs = new List<SalesClassificationInput>();
 
             foreach (var group in productGroups)
@@ -278,7 +278,7 @@ namespace ECommerceSalesIntelligence.Services
                     "Gelecek ay için tahmin oluşturulabilecek şehir-ürün verisi bulunamadı.");
             }
 
-            // Logistic Regression'ın gelecek ay için ürettiği sınıflandırma sonuçlarını toplar.
+            // Logistic Regression'ın gelecek ay için ürettiği sınıflandırma sonuçlarını toplar
             var predictions = new List<SalesClassificationPrediction>();
 
             foreach (var input in futureInputs)
@@ -299,12 +299,12 @@ namespace ECommerceSalesIntelligence.Services
                 });
             }
 
-            // En yüksek pozitif sınıf olasılığından başlayarak sıralar.
+            // En yüksek pozitif sınıf olasılığından başlayarak sıralar
             predictions = predictions
                 .OrderByDescending(x => x.Probability)
                 .ToList();
 
-            // Dashboard'da gösterilecek ana modeli oluşturur.
+            // Dashboard'da gösterilecek ana modeli oluşturur
             var viewModel = new ClassificationDashboardViewModel
             {
                 Metrics = metrics,
@@ -316,7 +316,7 @@ namespace ECommerceSalesIntelligence.Services
                     $"Classification eşiği: {ClassificationThreshold:N0}"
             };
 
-            // Oluşturulan sonucu bir saat boyunca cache'de tutar.
+            // Oluşturulan sonucu bir saat boyunca cache'de tutar
             _memoryCache.Set(
                 CacheKey,
                 viewModel,
@@ -326,7 +326,7 @@ namespace ECommerceSalesIntelligence.Services
             return viewModel;
         }
 
-        // Hata veya veri yetersizliği durumunda boş dashboard modeli döndürür.
+        // Hata veya veri yetersizliği durumunda boş dashboard modeli döndürür
         private ClassificationDashboardViewModel EmptyResult(string message)
         {
             return new ClassificationDashboardViewModel
@@ -338,7 +338,7 @@ namespace ECommerceSalesIntelligence.Services
             };
         }
 
-        // SQL'den oluşturulan aylık şehir-ürün satış modelidir.
+        // SQL'den oluşturulan aylık şehir-ürün satış modelidir
         private class MonthlySale
         {
             public string City { get; set; } = "";

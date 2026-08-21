@@ -1,263 +1,513 @@
-﻿@{
-    Layout = "~/Views/Shared/_Layout.cshtml"; 
+﻿@model ECommerceSalesIntelligence.Models.DashboardViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var totalRevenue = Model?.TotalRevenue ?? 0;
+    var totalQuantity = Model?.TotalQuantity ?? 0;
+    var totalRecords = Model?.TotalSalesRecords ?? 0;
+    var averageSale = Model?.AverageSaleAmount ?? 0;
+    var averageUnitPrice = Model?.AverageUnitPrice ?? 0;
+    var campaignRate = Model?.CampaignRate ?? 0;
+
+    var topCity = Model?.CitySales?.FirstOrDefault();
+    var topCategory = Model?.CategorySales?.FirstOrDefault();
+    var topPayment = Model?.PaymentMethods?.FirstOrDefault();
+    var topProduct = Model?.TopProducts?.FirstOrDefault();
+
+    var chartDates = System.Text.Json.JsonSerializer.Serialize(
+        Model?.DailySales?.Select(x => x.Date.ToString("dd.MM")).ToList() ?? new List<string>());
+
+    var chartRevenue = System.Text.Json.JsonSerializer.Serialize(
+        Model?.DailySales?.Select(x => x.Revenue).ToList() ?? new List<decimal>());
+
+    var chartQuantity = System.Text.Json.JsonSerializer.Serialize(
+        Model?.DailySales?.Select(x => x.Quantity).ToList() ?? new List<long>());
+
+    string Money(decimal value) => value.ToString("N0") + " ₺";
+    string Number(long value) => value.ToString("N0");
+    string Percent(double value) => value.ToString("N1") + "%";
 }
 
-<div class="flex flex-col w-full p-container-margin gap-stack-lg animate-[fadeIn_0.5s_ease-out]">
-    <div class="flex items-center justify-between mb-2">
-        <div>
-            <h1 class="font-display-lg text-display-lg text-on-surface mb-1 tracking-tight">Gösterge Paneli - Genel Bakış</h1>
-            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Ticaret telemetrisi ve aktif ML.NET çıkarım boru hatlarının toplu görünümü.</p>
+<div class="flex flex-col w-full p-container-margin gap-3 animate-[fadeIn_0.4s_ease-out]">
+
+    <!-- BAŞLIK -->
+    <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+            <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Gösterge Paneli</h1>
+            <p class="font-body-sm text-[11px] text-on-surface-variant mt-0.5">Genel satış, ürün ve veri istatistikleri</p>
         </div>
-        <div class="flex items-center gap-3 bg-surface-container-high rounded-full p-1.5 shadow-sm">
-            <button class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface text-on-surface font-label-md text-label-md shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
-                <span class="material-symbols-outlined text-[18px]">calendar_today</span>
-                Son 30 Gün
-            </button>
-            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-colors">
-                <span class="material-symbols-outlined text-[18px]">public</span>
-                Tüm Bölgeler
-            </button>
-            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-colors">
-                <span class="material-symbols-outlined text-[18px]">category</span>
-                Tüm Kategoriler
-            </button>
-            <div class="w-px h-6 bg-outline-variant mx-1"></div>
-            <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-on-primary hover:bg-primary/90 transition-colors">
-                <span class="material-symbols-outlined text-[18px]">filter_list</span>
-            </button>
+        <div class="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 shrink-0">
+            <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+            <span class="font-label-md text-[11px] whitespace-nowrap">
+                @(Model?.StartDate?.ToString("dd.MM.yyyy") ?? "-") - @(Model?.EndDate?.ToString("dd.MM.yyyy") ?? "-")
+            </span>
         </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-gutter">
-        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div class="absolute -right-6 -top-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
-            <div class="flex items-center justify-between mb-4 relative z-10">
-                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Toplam Hacim</span>
-                <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg text-[20px]">database</span>
+
+    <!-- KPI KARTLARI -->
+    <div class="grid grid-cols-2 xl:grid-cols-5 gap-2.5">
+
+        <!-- CİRO -->
+        <div class="rounded-xl p-3.5 bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-100">Toplam Ciro</span>
+                <span class="material-symbols-outlined text-[19px] bg-white/15 rounded-lg p-1">payments</span>
             </div>
-            <div class="relative z-10">
-                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
-                    1.02M <span class="font-label-md text-label-md text-on-tertiary-container flex items-center bg-tertiary-container/10 px-2 py-0.5 rounded-full"><span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>+12.4%</span>
-                </div>
-                <p class="font-body-sm text-body-sm text-outline mt-1">İşlenen işlemler</p>
-            </div>
+            <div class="text-[21px] font-bold truncate">@Money(totalRevenue)</div>
+            <p class="text-[10px] text-indigo-100 mt-1">Genel satış geliri</p>
         </div>
-        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div class="absolute -right-6 -top-6 w-24 h-24 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-colors"></div>
-            <div class="flex items-center justify-between mb-4 relative z-10">
-                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Aktif Katalog</span>
-                <span class="material-symbols-outlined text-secondary bg-secondary/10 p-2 rounded-lg text-[20px]">inventory_2</span>
+
+        <!-- ADET -->
+        <div class="rounded-xl p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-blue-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-cyan-50">Satılan Adet</span>
+                <span class="material-symbols-outlined text-[19px] bg-white/15 rounded-lg p-1">inventory_2</span>
             </div>
-            <div class="relative z-10">
-                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
-                    100 <span class="font-label-md text-label-md text-on-surface-variant flex items-center bg-surface-variant/50 px-2 py-0.5 rounded-full">8 Kategori Genelinde</span>
-                </div>
-                <p class="font-body-sm text-body-sm text-outline mt-1">İzlenen SKU'lar</p>
-            </div>
+            <div class="text-[21px] font-bold truncate">@Number(totalQuantity)</div>
+            <p class="text-[10px] text-cyan-50 mt-1">Toplam ürün miktarı</p>
         </div>
-        <div class="bg-surface-container rounded-2xl p-6 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-            <div class="absolute -right-6 -top-6 w-24 h-24 bg-on-tertiary-container/5 rounded-full blur-2xl group-hover:bg-on-tertiary-container/10 transition-colors"></div>
-            <div class="flex items-center justify-between mb-4 relative z-10">
-                <span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Küresel Erişim</span>
-                <span class="material-symbols-outlined text-on-tertiary-container bg-tertiary-container/10 p-2 rounded-lg text-[20px]">public</span>
+
+        <!-- KAYIT -->
+        <div class="rounded-xl p-3.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-50">Toplam Veri</span>
+                <span class="material-symbols-outlined text-[19px] bg-white/15 rounded-lg p-1">database</span>
             </div>
-            <div class="relative z-10">
-                <div class="font-display-lg text-display-lg text-on-surface flex items-baseline gap-2">
-                    10 <span class="font-label-md text-label-md text-on-surface-variant flex items-center bg-surface-variant/50 px-2 py-0.5 rounded-full">Aktif Bölge</span>
-                </div>
-                <p class="font-body-sm text-body-sm text-outline mt-1">Faaliyet gösterilen pazarlar</p>
-            </div>
+            <div class="text-[21px] font-bold truncate">@Number(totalRecords)</div>
+            <p class="text-[10px] text-emerald-50 mt-1">Satış kaydı</p>
         </div>
-        <div class="bg-primary-container rounded-2xl p-6 relative overflow-hidden shadow-md flex flex-col justify-between">
-            <div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
-            <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
-            <div class="relative z-10 flex items-start justify-between">
+
+        <!-- ORTALAMA -->
+        <div class="rounded-xl p-3.5 bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-orange-50">Ort. Satış</span>
+                <span class="material-symbols-outlined text-[19px] bg-white/15 rounded-lg p-1">analytics</span>
+            </div>
+            <div class="text-[21px] font-bold truncate">@Money(averageSale)</div>
+            <p class="text-[10px] text-orange-50 mt-1">İşlem başına ortalama</p>
+        </div>
+
+        <!-- KAMPANYA -->
+        <div class="rounded-xl p-3.5 bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-md shadow-pink-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-pink-50">Kampanya</span>
+                <span class="material-symbols-outlined text-[19px] bg-white/15 rounded-lg p-1">campaign</span>
+            </div>
+            <div class="text-[21px] font-bold truncate">@Percent(campaignRate)</div>
+            <p class="text-[10px] text-pink-50 mt-1">Kampanyalı işlemler</p>
+        </div>
+    </div>
+
+    <!-- GRAFİK + ÖZET -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-2.5">
+
+        <!-- GRAFİK -->
+        <div class="xl:col-span-8 rounded-xl bg-white border border-indigo-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between gap-3 mb-2">
                 <div>
-                    <span class="font-label-md text-label-md text-on-primary-container uppercase tracking-wider block mb-1 flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></div>
-                        ML Boru Hattı Durumu
+                    <h2 class="font-title-lg text-[15px] font-semibold text-slate-800">Günlük Satış Trendi</h2>
+                    <p class="text-[10px] text-slate-500">Günlük ciro ve satış adedi</p>
+                </div>
+                <div class="flex items-center gap-3 text-[10px]">
+                    <span class="flex items-center gap-1 text-indigo-600"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Ciro</span>
+                    <span class="flex items-center gap-1 text-teal-600"><span class="w-2 h-2 rounded-full bg-teal-500"></span>Adet</span>
+                </div>
+            </div>
+            <div class="relative h-[250px] w-full">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- HIZLI ÖZET -->
+        <div class="xl:col-span-4 grid grid-cols-2 xl:grid-cols-1 gap-2.5">
+
+            <!-- ŞEHİR -->
+            <div class="rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 p-3.5">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="material-symbols-outlined text-[17px] text-violet-600">location_on</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-violet-600">Lider Şehir</span>
+                </div>
+                <div class="text-[16px] font-bold text-slate-800 truncate">
+                    @(
+                                        topCity?.City ?? "Veri yok")
+                </div>
+                <div class="flex justify-between items-center mt-1.5 text-[10px]">
+                    <span class="text-slate-500">Ciro</span>
+                    <span class="font-semibold text-violet-700">
+                        @(
+                                                topCity != null ? Money(topCity.Revenue) : "-")
                     </span>
-                    <div class="font-headline-sm text-headline-sm text-on-primary-container mt-2">Tüm Modeller Sağlıklı</div>
-                </div>
-                <span class="material-symbols-outlined text-on-primary-container/50 text-[32px]">hub</span>
-            </div>
-            <div class="relative z-10 flex flex-col gap-2 mt-6">
-                <div class="flex items-center justify-between">
-                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">FORECAST_v2.1</span>
-                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-full h-full bg-on-tertiary-container"></div></span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">CLASS_ENSEMBLE</span>
-                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-full h-full bg-on-tertiary-container"></div></span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="font-data-mono text-data-mono text-on-primary-container/80 text-[12px]">ANOMALY_ISO</span>
-                    <span class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[85%] h-full bg-on-tertiary-container"></div></span>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
-        <div class="lg:col-span-8 flex flex-col gap-gutter">
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col min-h-[400px]">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="font-headline-sm text-headline-sm text-on-surface">Günlük Hacim ve Öngörü</h2>
-                        <p class="font-body-sm text-body-sm text-on-surface-variant">Geçmiş satışlar ve 14 günlük ML projeksiyonu</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container rounded">
-                            <div class="w-2 h-2 rounded-full bg-primary"></div>
-                            <span class="font-label-md text-[11px] text-on-surface">Gerçek</span>
-                        </div>
-                        <div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container rounded">
-                            <div class="w-2 h-2 rounded-full bg-secondary border border-secondary border-dashed" style="background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--tw-colors-secondary) 2px, var(--tw-colors-secondary) 4px);"></div>
-                            <span class="font-label-md text-[11px] text-on-surface">Öngörü</span>
-                        </div>
-                    </div>
+
+            <!-- KATEGORİ -->
+            <div class="rounded-xl bg-gradient-to-r from-fuchsia-50 to-pink-50 border border-fuchsia-100 p-3.5">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="material-symbols-outlined text-[17px] text-fuchsia-600">category</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-fuchsia-600">Lider Kategori</span>
                 </div>
-                <div class="flex-1 relative w-full h-full min-h-[280px] bg-surface-container-low/50 rounded-xl flex items-end pt-8 px-4 pb-8">
-                    <svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 300">
-                        <defs>
-                            <lineargradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
-                                <stop offset="0%" stop-color="var(--tw-colors-primary)" stop-opacity="0.2"></stop>
-                                <stop offset="100%" stop-color="var(--tw-colors-primary)" stop-opacity="0"></stop>
-                            </lineargradient>
-                            <pattern height="10" id="forecastPattern" patternunits="userSpaceOnUse" width="10">
-                                <path d="M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2" stroke="var(--tw-colors-secondary)" stroke-opacity="0.3" stroke-width="1"></path>
-                            </pattern>
-                        </defs>
-                        <path d="M0,280 L0,180 Q50,150 100,200 T200,120 T300,160 T400,90 T500,110 T600,40 T700,80 L700,280 Z" fill="url(#chartGrad)"></path>
-                        <path d="M0,180 Q50,150 100,200 T200,120 T300,160 T400,90 T500,110 T600,40 T700,80" fill="none" stroke="var(--tw-colors-primary)" stroke-linecap="round" stroke-width="3"></path>
-                        <path d="M700,280 L700,80 Q750,50 800,90 T900,30 T1000,60 L1000,280 Z" fill="url(#forecastPattern)"></path>
-                        <path d="M700,80 Q750,50 800,90 T900,30 T1000,60" fill="none" stroke="var(--tw-colors-secondary)" stroke-dasharray="8,4" stroke-linecap="round" stroke-width="3"></path>
-                        <line stroke="var(--tw-colors-outline-variant)" stroke-dasharray="4,4" stroke-width="1" x1="700" x2="700" y1="0" y2="280"></line>
-                        <rect fill="var(--tw-colors-surface-container-high)" height="24" rx="12" width="80" x="660" y="285"></rect>
-                        <text class="font-data-mono text-[10px]" fill="var(--tw-colors-on-surface)" text-anchor="middle" x="700" y="300">BUGÜN</text>
-                    </svg>
+                <div class="text-[16px] font-bold text-slate-800 truncate">
+                    @(
+                                        topCategory?.CategoryName ?? "Veri yok")
+                </div>
+                <div class="flex justify-between items-center mt-1.5 text-[10px]">
+                    <span class="text-slate-500">Ciro payı</span>
+                    <span class="font-semibold text-fuchsia-700">
+                        @(
+                                                topCategory != null ? Percent(topCategory.RevenuePercentage) : "-")
+                    </span>
                 </div>
             </div>
-        </div>
-        <div class="lg:col-span-4 flex flex-col gap-gutter h-full">
-            <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex-1">
-                <h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">Bölgesel Isı Haritası</h2>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Aktif pazarlardaki işlem yoğunluğu</p>
-                <div class="relative w-full h-[200px] mb-6 rounded-xl overflow-hidden bg-surface-container-low" data-alt="A highly stylized, minimal global map visualization with an indigo and teal color palette matching the UI. Soft glowing heat points indicating high transaction volume in North America, Europe, and Asia. Corporate, sleek, data-driven aesthetic." data-location="Global, Top Markets" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuATz8KyvdLBHTTXOwWad37HAQJkdSa5Lu01fkbJns5anjk4eWLpbBklXB5igmwFNU5RrEEvwVOVj1RgccGNh6QAP3VYEiDWyL-feJKNKg1EG69lc2GFYBAOCl_-C5x3awUZzjT0KBWv3AYWi_tFw_jrPSbT1H7xBFtsVEzFvt-09i_M9Rd_3xghDoLPyk9QSfLyDTcuHAzwyxz0PERREKa8GrEN_QJoBtig3kVKLe4LQIcwiObl0XX-')"></div>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">01</span>
-                            <span class="font-body-md text-body-md text-on-surface font-medium">Amerika Birleşik Devletleri</span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[85%] h-full bg-primary"></div></span>
-                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">42.1k</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">02</span>
-                            <span class="font-body-md text-body-md text-on-surface font-medium">Birleşik Krallık</span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[60%] h-full bg-secondary"></div></span>
-                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">28.4k</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="font-data-mono text-data-mono text-on-surface-variant w-4">03</span>
-                            <span class="font-body-md text-body-md text-on-surface font-medium">Almanya</span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="w-[45%] h-full bg-secondary"></div></span>
-                            <span class="font-data-mono text-label-md text-on-surface w-12 text-right">19.2k</span>
-                        </div>
-                    </div>
+
+            <!-- ÖDEME -->
+            <div class="rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 p-3.5">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="material-symbols-outlined text-[17px] text-emerald-600">credit_card</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Öne Çıkan Ödeme</span>
+                </div>
+                <div class="text-[16px] font-bold text-slate-800 truncate">
+                    @(
+                                        topPayment?.PaymentMethod ?? "Veri yok")
+                </div>
+                <div class="flex justify-between items-center mt-1.5 text-[10px]">
+                    <span class="text-slate-500">Ciro payı</span>
+                    <span class="font-semibold text-emerald-700">
+                        @(
+                                                topPayment != null ? Percent(topPayment.Percentage) : "-")
+                    </span>
+                </div>
+            </div>
+
+            <!-- ÜRÜN -->
+            <div class="rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 p-3.5">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="material-symbols-outlined text-[17px] text-orange-600">star</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-orange-600">En Çok Satan</span>
+                </div>
+                <div class="text-[16px] font-bold text-slate-800 truncate" title="@(topProduct?.ProductName ?? "Veri yok")">@(topProduct?.ProductName ?? "Veri yok")</div>
+                <div class="flex justify-between items-center mt-1.5 text-[10px]">
+                    <span class="text-slate-500">Satılan adet</span>
+                    <span class="font-semibold text-orange-700">
+                        @(
+                                                topProduct != null ? Number(topProduct.Quantity) : "-")
+                    </span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div class="p-6 border-b border-outline-variant/20 flex items-center justify-between bg-surface-bright">
-            <div>
-                <h2 class="font-headline-sm text-headline-sm text-on-surface">Son Çıkarım Günlükleri</h2>
-                <p class="font-body-sm text-body-sm text-on-surface-variant">ML.NET anomali tespiti tarafından işlenen işlemlerin canlı akışı.</p>
+
+    <!-- KATEGORİ / ŞEHİR / ÖDEME -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-2.5">
+
+        <!-- KATEGORİ -->
+        <div class="rounded-xl bg-white border border-fuchsia-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-[14px] font-semibold text-slate-800">Kategori Dağılımı</h2>
+                    <p class="text-[10px] text-slate-500">Ciroya göre kategoriler</p>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-fuchsia-500">category</span>
             </div>
-            <button class="flex items-center gap-2 px-3 py-1.5 rounded bg-surface-container hover:bg-surface-container-high transition-colors font-label-md text-[12px] text-on-surface">
-                <span class="material-symbols-outlined text-[16px]">download</span> CSV İndir
-            </button>
+
+            <div class="space-y-2.5">
+                @if (Model?.CategorySales?.Any() == true)
+                {
+                    foreach (var item in Model.CategorySales.Take(6))
+                    {
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-[11px] font-medium text-slate-700 truncate">@item.CategoryName</span>
+                                <span class="text-[10px] font-semibold text-fuchsia-600">@Percent(item.RevenuePercentage)</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-fuchsia-50 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-fuchsia-500 to-pink-500 rounded-full" style="width:@Math.Min(item.RevenuePercentage, 100).ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-[9px] text-slate-400">
+                                <span>@Number(item.Quantity) adet</span>
+                                <span>@Money(item.Revenue)</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5 text-slate-400 text-[11px]">Kategori verisi bulunamadı.</div>
+                }
+            </div>
         </div>
-        <div class="w-full overflow-x-auto">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-error hidden group-hover:block"></div><table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-surface-container-low/50">
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-24">İşlem Kimliği</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-40">Zaman Damgası</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Ürün</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kategori</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right w-32">Tutar</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-32">Bölge</th>
-                        <th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right w-24">Risk Puanı</th>
-                    </tr>
-                </thead>
-                <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant/10">
-                    <tr class="hover:bg-surface-container-low transition-colors group">
-                        <td class="py-3 px-6 font-data-mono text-outline">#84920</td>
-                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:22:01</td>
-                        <td class="py-3 px-6 font-medium">Kuantum Gürültü Önleyici Kulaklık</td>
-                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Elektronik</span></td>
-                        <td class="py-3 px-6 text-right font-data-mono">$249.99</td>
-                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> US</td>
-                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.02</td>
-                    </tr>
-                    <tr class="hover:bg-surface-container-low transition-colors group">
-                        <td class="py-3 px-6 font-data-mono text-outline">#84919</td>
-                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:19:45</td>
-                        <td class="py-3 px-6 font-medium">Ergonomik Fileli Ofis Koltuğu</td>
-                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Mobilya</span></td>
-                        <td class="py-3 px-6 text-right font-data-mono">$315.50</td>
-                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-secondary"></div> UK</td>
-                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.04</td>
-                    </tr>
-                    <tr class="hover:bg-surface-container-low transition-colors group bg-error/5 relative">
-                        <td class="py-3 px-6 font-data-mono text-outline">#84918</td>
-                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:15:12</td>
-                        <td class="py-3 px-6 font-medium text-error">Toplu Alım: Akıllı Saatler</td>
-                        <td class="py-3 px-6"><span class="px-2 py-1 bg-error-container text-on-error-container rounded-md text-[11px] font-label-md">Elektronik</span></td>
-                        <td class="py-3 px-6 text-right font-data-mono text-error font-medium">$4,250.00</td>
-                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-secondary"></div> DE</td>
-                        <td class="py-3 px-6 text-right font-data-mono text-error font-bold flex items-center justify-end gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> 0.94</td>
-                    </tr>
-                    <tr class="hover:bg-surface-container-low transition-colors group">
-                        <td class="py-3 px-6 font-data-mono text-outline">#84917</td>
-                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:10:05</td>
-                        <td class="py-3 px-6 font-medium">Seramik Filtre Kahve Makinesi</td>
-                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Ev</span></td>
-                        <td class="py-3 px-6 text-right font-data-mono">$45.00</td>
-                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> US</td>
-                        <td class="py-3 px-6 text-right font-data-mono text-on-tertiary-container">0.01</td>
-                    </tr>
-                    <tr class="hover:bg-surface-container-low transition-colors group">
-                        <td class="py-3 px-6 font-data-mono text-outline">#84916</td>
-                        <td class="py-3 px-6 text-on-surface-variant">2023-10-24 14:02:33</td>
-                        <td class="py-3 px-6 font-medium">Ultra Geniş Oyun Monitörü 34"</td>
-                        <td class="py-3 px-6"><span class="px-2 py-1 bg-surface-container rounded-md text-[11px] font-label-md text-on-surface-variant">Elektronik</span></td>
-                        <td class="py-3 px-6 text-right font-data-mono">$799.00</td>
-                        <td class="py-3 px-6 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-primary"></div> CA</td>
-                        <td class="py-3 px-6 text-right font-data-mono text-on-surface-variant">0.12</td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <!-- ŞEHİR -->
+        <div class="rounded-xl bg-white border border-indigo-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-[14px] font-semibold text-slate-800">Şehir Performansı</h2>
+                    <p class="text-[10px] text-slate-500">Ciroya göre güçlü şehirler</p>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-indigo-500">location_city</span>
+            </div>
+
+            <div class="space-y-2.5">
+                @if (Model?.CitySales?.Any() == true)
+                {
+                    var maxCityRevenue = Model.CitySales.Max(x => x.Revenue);
+
+                    foreach (var item in Model.CitySales.Take(6))
+                    {
+                        var width = maxCityRevenue > 0 ? (double)(item.Revenue / maxCityRevenue) * 100 : 0;
+
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-[11px] font-medium text-slate-700 truncate">@item.City</span>
+                                <span class="text-[10px] font-semibold text-indigo-600">@Money(item.Revenue)</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-indigo-50 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full" style="width:@width.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-[9px] text-slate-400">
+                                <span>@Number(item.Quantity) adet</span>
+                                <span>Ort. @Money(item.AverageSaleAmount)</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5 text-slate-400 text-[11px]">Şehir verisi bulunamadı.</div>
+                }
+            </div>
         </div>
-        <div class="p-4 border-t border-outline-variant/20 bg-surface-bright flex items-center justify-between">
-            <span class="font-body-sm text-body-sm text-outline">1.024.592 kayıttan 5 tanesi gösteriliyor</span>
-            <div class="flex gap-1">
-                <button class="w-8 h-8 rounded flex items-center justify-center text-outline hover:bg-surface-container transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-                <button class="w-8 h-8 rounded flex items-center justify-center bg-primary text-on-primary font-label-md text-[12px]">1</button>
-                <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors font-label-md text-[12px]">2</button>
-                <button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors font-label-md text-[12px]">3</button>
-                <button class="w-8 h-8 rounded flex items-center justify-center text-outline hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+
+        <!-- ÖDEME -->
+        <div class="rounded-xl bg-white border border-emerald-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-[14px] font-semibold text-slate-800">Ödeme Yöntemleri</h2>
+                    <p class="text-[10px] text-slate-500">Ciro ve işlem dağılımı</p>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-emerald-500">account_balance_wallet</span>
+            </div>
+
+            <div class="space-y-2.5">
+                @if (Model?.PaymentMethods?.Any() == true)
+                {
+                    foreach (var item in Model.PaymentMethods)
+                    {
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-[11px] font-medium text-slate-700 truncate">@item.PaymentMethod</span>
+                                <span class="text-[10px] font-semibold text-emerald-600">@Percent(item.Percentage)</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-emerald-50 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style="width:@Math.Min(item.Percentage, 100).ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-[9px] text-slate-400">
+                                <span>@Number(item.Quantity) işlem</span>
+                                <span>@Money(item.Revenue)</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5 text-slate-400 text-[11px]">Ödeme verisi bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- KAMPANYA + ÜRÜNLER -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+
+        <!-- KAMPANYA -->
+        <div class="rounded-xl bg-gradient-to-br from-rose-50 via-white to-orange-50 border border-rose-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-[14px] font-semibold text-slate-800">Kampanya Performansı</h2>
+                    <p class="text-[10px] text-slate-500">Kampanyalı ve normal satış karşılaştırması</p>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-rose-500">campaign</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="rounded-lg bg-rose-500 p-3 text-white">
+                    <p class="text-[9px] font-semibold uppercase tracking-wide text-rose-100">Kampanyalı</p>
+                    <p class="text-[17px] font-bold mt-1">@Money(Model?.CampaignSummary?.CampaignRevenue ?? 0)</p>
+                    <p class="text-[9px] text-rose-100 mt-1">@Number(Model?.CampaignSummary?.CampaignQuantity ?? 0) adet · @Number(Model?.CampaignSummary?.CampaignRecordCount ?? 0) kayıt</p>
+                </div>
+
+                <div class="rounded-lg bg-orange-500 p-3 text-white">
+                    <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-100">Normal</p>
+                    <p class="text-[17px] font-bold mt-1">@Money(Model?.CampaignSummary?.NonCampaignRevenue ?? 0)</p>
+                    <p class="text-[9px] text-orange-100 mt-1">@Number(Model?.CampaignSummary?.NonCampaignQuantity ?? 0) adet · @Number(Model?.CampaignSummary?.NonCampaignRecordCount ?? 0) kayıt</p>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] font-medium text-slate-600">İşlem dağılımı</span>
+                    <div class="flex gap-2 text-[9px]">
+                        <span class="text-rose-600">Kampanya @Percent(Model?.CampaignSummary?.CampaignRate ?? 0)</span>
+                        <span class="text-orange-600">Normal @Percent(Model?.CampaignSummary?.NonCampaignRate ?? 0)</span>
+                    </div>
+                </div>
+                <div class="w-full h-2 rounded-full overflow-hidden flex bg-orange-100">
+                    <div class="h-full bg-rose-500" style="width:@Math.Min(Model?.CampaignSummary?.CampaignRate ?? 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                    <div class="h-full bg-orange-400 flex-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÜRÜNLER -->
+        <div class="rounded-xl bg-white border border-amber-100 shadow-sm p-3.5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-[14px] font-semibold text-slate-800">En Çok Satan Ürünler</h2>
+                    <p class="text-[10px] text-slate-500">Satış adedine göre ilk 5 ürün</p>
+                </div>
+                <span class="material-symbols-outlined text-[18px] text-amber-500">trending_up</span>
+            </div>
+
+            <div class="space-y-1.5">
+                @if (Model?.TopProducts?.Any() == true)
+                {
+                    var rank = 1;
+
+                    foreach (var item in Model.TopProducts.Take(5))
+                    {
+                        <div class="flex items-center gap-2.5 py-1">
+                            <span class="w-6 h-6 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">@rank</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[11px] font-medium text-slate-700 truncate" title="@item.ProductName">@item.ProductName</p>
+                                <p class="text-[9px] text-slate-400">@Money(item.Revenue)</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-orange-600 whitespace-nowrap">@Number(item.Quantity)</span>
+                        </div>
+                        rank++;
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5 text-slate-400 text-[11px]">Ürün verisi bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ALT BİLGİ -->
+    <div class="rounded-xl bg-gradient-to-r from-slate-800 via-indigo-900 to-violet-900 text-white px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-sm">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-[17px] text-indigo-300">database</span>
+            <span class="text-[10px] text-slate-300 truncate">Dashboard SQL üzerinde gruplanmış satış verileriyle oluşturulmaktadır.</span>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+            <div class="text-right">
+                <span class="block text-[8px] text-slate-400 uppercase">Ort. Birim Fiyat</span>
+                <span class="text-[10px] font-semibold text-white">@Money(averageUnitPrice)</span>
+            </div>
+            <div class="w-px h-6 bg-white/20"></div>
+            <div class="text-right">
+                <span class="block text-[8px] text-slate-400 uppercase">Veri Aralığı</span>
+                <span class="text-[10px] font-semibold text-white whitespace-nowrap">
+                    @(Model?.StartDate?.ToString("yyyy") ?? "-") - @(Model?.EndDate?.ToString("yyyy") ?? "-")
+                </span>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded",function(){
+        const canvas=document.getElementById("dailySalesChart");
+        if(!canvas)return;
+        const labels=@Html.Raw(chartDates);
+        const revenueData=@Html.Raw(chartRevenue);
+        const quantityData=@Html.Raw(chartQuantity);
+        if(!labels.length)return;
+
+        const compactFormat=new Intl.NumberFormat("tr-TR",{notation:"compact",maximumFractionDigits:1});
+        const moneyFormat=new Intl.NumberFormat("tr-TR",{maximumFractionDigits:0});
+
+        new Chart(canvas.getContext("2d"),{
+            type:"line",
+            data:{
+                labels:labels,
+                datasets:[
+                    {
+                        label:"Ciro",
+                        data:revenueData,
+                        borderColor:"#6366f1",
+                        backgroundColor:"rgba(99,102,241,.10)",
+                        borderWidth:2,
+                        pointRadius:0,
+                        pointHoverRadius:4,
+                        tension:.35,
+                        fill:true,
+                        yAxisID:"revenue"
+                    },
+                    {
+                        label:"Satış Adedi",
+                        data:quantityData,
+                        borderColor:"#14b8a6",
+                        backgroundColor:"transparent",
+                        borderWidth:2,
+                        pointRadius:0,
+                        pointHoverRadius:4,
+                        tension:.35,
+                        fill:false,
+                        yAxisID:"quantity"
+                    }
+                ]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                interaction:{mode:"index",intersect:false},
+                plugins:{
+                    legend:{display:false},
+                    tooltip:{
+                        backgroundColor:"#172033",
+                        titleColor:"#fff",
+                        bodyColor:"#e2e8f0",
+                        padding:8,
+                        callbacks:{
+                            label:function(context){
+                                const value=context.parsed.y??0;
+                                return context.dataset.yAxisID==="revenue"
+                                    ?" Ciro: "+moneyFormat.format(value)+" ₺"
+                                    :" Adet: "+compactFormat.format(value);
+                            }
+                        }
+                    }
+                },
+                scales:{
+                    x:{
+                        grid:{display:false},
+                        ticks:{maxTicksLimit:8,font:{size:9},color:"#64748b"}
+                    },
+                    revenue:{
+                        position:"left",
+                        beginAtZero:true,
+                        grid:{color:"rgba(99,102,241,.08)"},
+                        ticks:{
+                            font:{size:9},
+                            color:"#6366f1",
+                            callback:function(value){return compactFormat.format(value)+" ₺";}
+                        }
+                    },
+                    quantity:{
+                        position:"right",
+                        beginAtZero:true,
+                        grid:{drawOnChartArea:false},
+                        ticks:{
+                            font:{size:9},
+                            color:"#0f766e",
+                            callback:function(value){return compactFormat.format(value);}
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

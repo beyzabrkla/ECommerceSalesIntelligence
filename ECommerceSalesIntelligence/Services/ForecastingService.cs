@@ -17,10 +17,10 @@ namespace ECommerceSalesIntelligence.Services
             _mlContext = mlContext;
         }
 
-        // Seçilen şehir için geçmiş günlük satışlardan gelecek günleri tahmin eder.
+        // Seçilen şehir için geçmiş günlük satışlardan gelecek günleri tahmin eder
         public async Task<SalesPrediction> PredictNextDaysAsync( string city, int horizon = 7, float confidenceLevel = 0.95f)
         {
-            // Parametrelerin geçerli olup olmadığını kontrol eder.
+            // Parametrelerin geçerli olup olmadığını kontrol eder
             if (string.IsNullOrWhiteSpace(city))
             {
                 throw new ArgumentException(
@@ -28,11 +28,11 @@ namespace ECommerceSalesIntelligence.Services
                     nameof(city));
             }
 
-            city = city.Trim(); // Şehir adının başındaki ve sonundaki boşlukları kaldırır.
+            city = city.Trim(); // Şehir adının başındaki ve sonundaki boşlukları kaldırır
 
-            // Şehirdeki satışları günlük toplam satışa dönüştürür.
+            // Şehirdeki satışları günlük toplam satışa dönüştürür
             var groupedSales = await _context.SalesRecords
-                .AsNoTracking() // Veritabanından satış kayıtlarını getirir ve değişiklik takibi yapmaz.
+                .AsNoTracking() // Veritabanından satış kayıtlarını getirir ve değişiklik takibi yapmaz
                 .Where(x => x.City != null && x.City == city) 
                 .GroupBy(x => x.OrderDate.Date)
                 .Select(g => new
@@ -43,16 +43,16 @@ namespace ECommerceSalesIntelligence.Services
                 .OrderBy(x => x.OrderDate)
                 .ToListAsync();
 
-            // Modelin kullanacağı tarih aralığını belirler.
+            // Modelin kullanacağı tarih aralığını belirler
             DateTime startDate = groupedSales.First().OrderDate.Date;
             DateTime endDate = groupedSales.Last().OrderDate.Date;
 
-            // Günlük satışlara hızlı erişim için dictionary oluşturur. Yani her günün satış miktarını hızlıca bulmak için bir sözlük oluşturur.
+            // Günlük satışlara hızlı erişim için dictionary oluşturur. Yani her günün satış miktarını hızlıca bulmak için bir sözlük oluşturur
             var salesDictionary = groupedSales.ToDictionary(
                 x => x.OrderDate.Date,
                 x => Convert.ToSingle(x.Quantity));
 
-            // Satış olmayan günleri 0 ile doldurarak kesintisiz zaman serisi oluşturur.
+            // Satış olmayan günleri 0 ile doldurarak kesintisiz zaman serisi oluşturur
             var dailySales = new List<SalesData>();
 
             for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
@@ -60,12 +60,12 @@ namespace ECommerceSalesIntelligence.Services
                 float quantity = salesDictionary.TryGetValue(date, out float existingQuantity) ? existingQuantity : 0f;
                 dailySales.Add(new SalesData
                 {
-                    OrderDate = date, // Günlük satış verisinin tarihini ayarlar.
-                    Quantity = Math.Max(0f, quantity) // Satış miktarını 0'ın altına düşürmez.
+                    OrderDate = date, // Günlük satış verisinin tarihini ayarlar
+                    Quantity = Math.Max(0f, quantity) // Satış miktarını 0'ın altına düşürmez
                 });
             }
 
-            // SSA modeli için minimum veri kontrolü yapar.
+            // SSA modeli için minimum veri kontrolü yapar
             if (dailySales.Count < 30)
             {
                 throw new InvalidOperationException(
@@ -84,9 +84,9 @@ namespace ECommerceSalesIntelligence.Services
                     $"Mevcut satış günü: {nonZeroDays}");
             }
 
-            // SSA'nın geçmiş pencere ve eğitim veri uzunluğunu belirler.
-            int seriesLength = Math.Min(90, dailySales.Count); //
-            int windowSize = Math.Max(2, Math.Min(30, seriesLength / 2)); // 30 günlük pencere boyutu, ancak veri uzunluğunun yarısından fazla olamaz.
+            // SSA'nın geçmiş pencere ve eğitim veri uzunluğunu belirler
+            int seriesLength = Math.Min(90, dailySales.Count);
+            int windowSize = Math.Max(2, Math.Min(30, seriesLength / 2)); // 30 günlük pencere boyutu, ancak veri uzunluğunun yarısından fazla olamaz
 
             if (windowSize >= seriesLength)
             {
@@ -95,10 +95,10 @@ namespace ECommerceSalesIntelligence.Services
 
             int trainSize = dailySales.Count;
 
-            // Günlük satış listesini ML.NET veri yapısına dönüştürür.
+            // Günlük satış listesini ML.NET veri yapısına dönüştürür
             IDataView dataView = _mlContext.Data.LoadFromEnumerable(dailySales);
 
-            // SSA forecasting pipeline'ını oluşturur.
+            // SSA forecasting pipeline'ını oluşturur
             IEstimator<ITransformer> forecastingPipeline;
 
             try
@@ -124,7 +124,7 @@ namespace ECommerceSalesIntelligence.Services
                     $"Horizon={horizon}",
                     ex);
             }
-            ITransformer forecastModel; // bu değişken, eğitilmiş SSA modelini tutar.
+            ITransformer forecastModel; // bu değişken, eğitilmiş SSA modelini tutar
 
             try
             {
@@ -141,7 +141,7 @@ namespace ECommerceSalesIntelligence.Services
                     ex);
             }
 
-            // Eğitilmiş model üzerinden zaman serisi tahmin motoru oluşturur.
+            // Eğitilmiş model üzerinden zaman serisi tahmin motoru oluşturur
             TimeSeriesPredictionEngine<SalesData, SalesPrediction> forecastingEngine;
 
             try
@@ -157,7 +157,7 @@ namespace ECommerceSalesIntelligence.Services
                     ex);
             }
 
-            // Gelecek günlerin satış tahminini üretir.
+            // Gelecek günlerin satış tahminini üretir
             SalesPrediction prediction;
 
             try
@@ -171,7 +171,7 @@ namespace ECommerceSalesIntelligence.Services
                     ex);
             }
 
-            // Tahmin modelinin teknik bilgilerini sonuç nesnesine ekler.
+            // Tahmin modelinin teknik bilgilerini sonuç nesnesine ekler
             prediction.City = city;
             prediction.WindowSize = windowSize;
             prediction.SeriesLength = seriesLength;
@@ -179,7 +179,7 @@ namespace ECommerceSalesIntelligence.Services
             prediction.Horizon = horizon;
             prediction.ConfidenceLevel = confidenceLevel;
 
-            // Son 30 gerçek günü dashboard grafiği için hazırlar.
+            // Son 30 gerçek günü dashboard grafiği için hazırlar
             prediction.HistoricalDetails = dailySales
                 .TakeLast(30)
                 .Select(x => new HistoricalDetailItem
@@ -189,10 +189,10 @@ namespace ECommerceSalesIntelligence.Services
                 })
                 .ToList();
 
-            // Tahmin başlangıç tarihini belirler.
+            // Tahmin başlangıç tarihini belirler
             DateTime lastHistoricalDate = dailySales.Last().OrderDate.Date;
 
-            // Her tahmin günü için tarih, tahmin ve güven aralığını oluşturur.
+            // Her tahmin günü için tarih, tahmin ve güven aralığını oluşturur
             prediction.Details = new List<ForecastDetailItem>();
 
             for (int i = 0; i < horizon; i++)
@@ -203,15 +203,12 @@ namespace ECommerceSalesIntelligence.Services
 
                 float rawUpper = prediction.UpperBound != null && prediction.UpperBound.Length > i ? prediction.UpperBound[i] : rawForecast; // üst sınırı al veya tahmin edilen değeri kullan
 
-                // Geçersiz matematiksel değerleri güvenli değerlere çevirir.
-                if (float.IsNaN(rawForecast) || float.IsInfinity(rawForecast))
-                    rawForecast = 0f;
+                // Geçersiz matematiksel değerleri güvenli değerlere çevirir
+                if (float.IsNaN(rawForecast) || float.IsInfinity(rawForecast)) rawForecast = 0f;
 
-                if (float.IsNaN(rawLower) || float.IsInfinity(rawLower))
-                    rawLower = 0f;
+                if (float.IsNaN(rawLower) || float.IsInfinity(rawLower)) rawLower = 0f;
 
-                if (float.IsNaN(rawUpper) || float.IsInfinity(rawUpper))
-                    rawUpper = rawForecast;
+                if (float.IsNaN(rawUpper) || float.IsInfinity(rawUpper)) rawUpper = rawForecast;
 
                 float forecastedSales = Math.Max(0f, (float)Math.Round(rawForecast, 2));
 
@@ -234,12 +231,12 @@ namespace ECommerceSalesIntelligence.Services
             return prediction;
         }
 
-        // Belirli şehir ve tarih için beklenen günlük satış miktarını hesaplar.
+        // Belirli şehir ve tarih için beklenen günlük satış miktarını hesaplar
         public async Task<float?> GetExpectedSalesAsync(string city, string? productName, DateTime targetDate)
         {
             try
             {
-                // Hedef tarihe kadar olan şehir satışlarını günlük olarak toplar.
+                // Hedef tarihe kadar olan şehir satışlarını günlük olarak toplar
                 var groupedSales = await _context.SalesRecords
                     .AsNoTracking()
                     .Where(x =>
@@ -257,7 +254,7 @@ namespace ECommerceSalesIntelligence.Services
                 if (groupedSales.Count < 30)
                     return null;
 
-                // Eksik günleri 0 ile tamamlayarak zaman serisini oluşturur.
+                // Eksik günleri 0 ile tamamlayarak zaman serisini oluşturur
                 var startDate = groupedSales.First().OrderDate.Date;
                 var endDate = targetDate.Date;
 
@@ -281,20 +278,20 @@ namespace ECommerceSalesIntelligence.Services
                 if (dailySales.Count < 30)
                     return null;
 
-                // Çok az gerçek satış bulunan serilerde tahmin yapmaz.
+                // Çok az gerçek satış bulunan serilerde tahmin yapmaz
                 int nonZeroDays = dailySales.Count(x => x.Quantity > 0);
 
                 if (nonZeroDays < 10)
                     return null;
 
-                // Tek günlük beklenen satış için SSA parametrelerini belirler.
+                // Tek günlük beklenen satış için SSA parametrelerini belirler
                 int seriesLength = dailySales.Count;
-                int windowSize = Math.Max(2, Math.Min(30, seriesLength / 2)); // 30 günlük pencere boyutu, ancak veri uzunluğunun yarısından fazla olamaz.
+                int windowSize = Math.Max(2, Math.Min(30, seriesLength / 2)); // 30 günlük pencere boyutu, ancak veri uzunluğunun yarısından fazla olamaz
                 int trainSize = seriesLength;
 
-                IDataView dataView = _mlContext.Data.LoadFromEnumerable(dailySales); // Günlük satış listesini ML.NET veri yapısına dönüştürür.
+                IDataView dataView = _mlContext.Data.LoadFromEnumerable(dailySales); // Günlük satış listesini ML.NET veri yapısına dönüştürür
 
-                // Bir sonraki gün için SSA modeli oluşturur.
+                // Bir sonraki gün için SSA modeli oluşturur
                 var forecastingPipeline = _mlContext.Forecasting.ForecastBySsa(
                     outputColumnName: nameof(SalesPrediction.ForecastedQuantity),
                     inputColumnName: nameof(SalesData.Quantity),
@@ -306,10 +303,10 @@ namespace ECommerceSalesIntelligence.Services
                     confidenceLowerBoundColumn: nameof(SalesPrediction.LowerBound),
                     confidenceUpperBoundColumn: nameof(SalesPrediction.UpperBound));
 
-                // Modeli eğitir.
+                // Modeli eğitir
                 ITransformer model = forecastingPipeline.Fit(dataView);
 
-                // Tek günlük tahmin üretir.
+                // Tek günlük tahmin üretir
                 var engine = model.CreateTimeSeriesEngine< SalesData,SalesPrediction>(_mlContext);
 
                 var prediction = engine.Predict();
@@ -332,7 +329,7 @@ namespace ECommerceSalesIntelligence.Services
             }
             catch
             {
-                // Beklenen satış hesaplanamazsa ana akışı bozmaz.
+                // Beklenen satış hesaplanamazsa ana akışı bozmaz
                 return null;
             }
         }
